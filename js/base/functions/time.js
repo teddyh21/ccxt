@@ -168,6 +168,12 @@ const ymdhms = (timestamp, infix = ' ') => {
     return Y + '-' + m + '-' + d + infix + H + ':' + M + ':' + S
 }
 
+const parseMmdd = (mmdd) => {
+    const year = new Date ().getUTCFullYear ().toString ()
+    const iso8601 = year + '-' + mmdd.slice (0, 2) + '-' + mmdd.slice (2, 4)
+    return parse8601 (iso8601 + ':')
+}
+
 module.exports =
 
     {
@@ -184,6 +190,7 @@ module.exports =
         , ymd
         , ymdhms
         , setTimeout_safe
+        , parseMmdd
         , sleep: ms => new Promise (resolve => setTimeout_safe (resolve, ms))
         , TimedOut
         , timeout: async (ms, promise) => {
@@ -196,7 +203,7 @@ module.exports =
             } finally {
                 clear () // fixes https://github.com/ccxt/ccxt/issues/749
             }
-        }
+        },
 }
 
 /*  ------------------------------------------------------------------------ */

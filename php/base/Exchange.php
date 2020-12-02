@@ -715,6 +715,13 @@ class Exchange {
         return gmdate('Y-m-d\\' . $infix . 'H:i:s', (int) round($timestamp / 1000));
     }
 
+    public static function parse_mmdd($mmdd) {
+        $month = substr($mmdd, 0, 2);
+        $day = substr($mmdd, 2, 2);
+        $iso8601 = gmdate('Y') . '-' . $month . '-' . $day . ':';
+        return static::parse8601($iso8601);
+    }
+
     public static function binary_concat() {
         return implode('', func_get_args());
     }
@@ -1804,6 +1811,23 @@ class Exchange {
 
     public function parseTrades($trades, $market = null, $since = null, $limit = null, $params = array()) {
         return $this->parse_trades($trades, $market, $since, $limit, $params);
+    }
+
+    public function parse_positions($positions, $symbols = null, $since = null, $limit = null, $params = array()) {
+        $array = is_array($positions) ? array_values($positions) : array();
+        $result = array();
+        foreach ($array as $position) {
+            $result[] = array_merge($this->parse_position($position), $params);
+        }
+        $result = $this->sort_by($result, 'timestamp');
+        if ($symbols !== null) {
+            $result = $this->filter_by_array($positions, 'symbols', $symbols);
+        }
+        return $this->filter_by_since_limit($result, $since, $limit);
+    }
+
+    public function parsePositions($positions, $market = null, $since = null, $limit = null, $params = array()) {
+        return $this->parse_positions($positions, $market, $since, $limit, $params);
     }
 
     public function parse_ledger($items, $currency = null, $since = null, $limit = null, $params = array()) {

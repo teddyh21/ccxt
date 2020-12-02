@@ -1109,6 +1109,19 @@ module.exports = class Exchange {
         return this.filterByCurrencySinceLimit (result, code, since, limit);
     }
 
+    parsePositions (positions, symbols = undefined, since = undefined, limit = undefined, params = {}) {
+        // this code is commented out temporarily to catch for exchange-specific errors
+        // if (!this.isArray (trades)) {
+        //     throw new ExchangeError (this.id + ' parseTrades expected an array in the trades argument, but got ' + typeof trades);
+        // }
+        let result = Object.values (positions || []).map ((position) => this.extend (this.parsePosition (position), params))
+        result = sortBy (result, 'timestamp')
+        if (symbols) {
+            result = this.filterByArray (result, 'symbol', symbols)
+        }
+        return this.filterBySinceLimit (result, since, limit)
+    }
+
     parseLedger (data, currency = undefined, since = undefined, limit = undefined, params = {}) {
         let result = [];
         const array = Object.values (data || []);

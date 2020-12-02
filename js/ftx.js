@@ -1538,8 +1538,98 @@ module.exports = class ftx extends Exchange {
         //     }
         //
         const result = this.safeValue (response, 'result', {});
-        // todo unify parsePosition/parsePositions
-        return this.safeValue (result, 'positions', []);
+        const positions = this.safeValue (result, 'positions', []);
+        return this.parsePositions (positions, symbols, since, limit);
+    }
+
+    parsePosition (position) {
+        // { collateralUsed: 5107.26736,
+        //   cost: -63956.8072,
+        //   entryPrice: 0.9997,
+        //   estimatedLiquidationPrice: 1.1628486176345045,
+        //   future: 'USDT-1225',
+        //   initialMarginRequirement: 0.05,
+        //   longOrderSize: 0,
+        //   maintenanceMarginRequirement: 0.03,
+        //   netSize: -63976,
+        //   openSize: 102176,
+        //   realizedPnl: -22.3056,
+        //   shortOrderSize: 38200,
+        //   side: 'sell',
+        //   size: 63976,
+        //   unrealizedPnl: 0 }
+        const initialMarginPercentage = this.safeFloat (position, 'initialMarginRequirement');
+        const maintenanceMarginPercentage = this.safeFloat (position, 'maintenanceMarginRequirement');
+        const rawSymbol = this.safeString (position, 'future');
+        let expiry = undefined;
+        let symbol = undefined;
+        if (rawSymbol !== undefined) {
+            const [ baseId, expiryDate ] = rawSymbol.split ('-');
+            const base = this.safeCurrencyCode (baseId);
+            symbol = base + '/USD';
+            expiry = this.parseMmdd (expiryDate);
+        }
+        let side = this.safeString (position, 'side');
+        side = (side === 'sell') ? 'short' : 'long';
+        const liquidationPrice = this.safeFloat (position, 'estimatedLiquidationPrice');
+        const contracts = this.safeFloat (position, 'size');
+        const realizedPnl = this.safeFloat (position, 'realizedPnl', 0);
+        const unrealizedPnl = this.safeFloat (position, 'unrealizedPnl', 0);
+        const pnl = this.sum (realizedPnl, unrealizedPnl);
+        const openSize = this.safeFloat (position, 'openSize');
+        const collateralUsed = this.safeFloat (position, 'collateralUsed');
+        let markPrice = undefined;
+        let totalCollateral = undefined;
+        let freeCollateral = undefined;
+        let notational = undefined;
+        let maintenanceMargin = undefined;
+        let initialMargin = undefined;
+        let leverage = undefined;
+        let price = undefined;
+        if ((openSize !== undefined) && (openSize !== 0) && (collateralUsed !== undefined)) {
+            markPrice = collateralUsed / (openSize * initialMarginPercentage);
+            price = markPrice + (pnl / contracts);
+            if (liquidationPrice !== undefined) {
+                const marginDifference = (liquidationPrice / markPrice);
+                let marginFraction = undefined;
+                if (side === 'long') {
+                    marginFraction = this.sum (marginDifference, -maintenanceMarginPercentage, 1);
+                } else {
+                    marginFraction = this.sum (marginDifference, maintenanceMarginPercentage, -1);
+                }
+                notational = contracts * markPrice;
+                totalCollateral = marginFraction * notational;
+                freeCollateral = totalCollateral * (1 - initialMarginPercentage);
+                maintenanceMargin = maintenanceMarginPercentage * notational;
+                initialMargin = initialMarginPercentage * notational;
+                leverage = 1 / marginFraction;
+            }
+        }
+        return {
+            'info': position,
+            'id': undefined,
+            'timestamp': undefined,
+            'datetime': undefined,
+            'isolated': false,
+            'hedged': false,
+            'side': side,
+            'contracts': contracts,
+            'symbol': symbol,
+            'totalCollateral': totalCollateral,
+            'freeCollateral': freeCollateral,
+            'realizedPnl': realizedPnl,
+            'unrealizedPnl': unrealizedPnl,
+            'pnl': pnl,
+            'maintenanceMarginPercentage': maintenanceMarginPercentage,
+            'maintenanceMargin': maintenanceMargin,
+            'initialMarginPercentage': initialMarginPercentage,
+            'initialMargin': initialMargin,
+            'leverage': leverage,
+            'markPrice': markPrice,
+            'notational': notational,
+            'expiry': expiry,
+            'price': price,
+        };
     }
 
     async fetchDepositAddress (code, params = {}) {

@@ -1067,6 +1067,14 @@ class Exchange(object):
             return None
 
     @staticmethod
+    def parse_mmdd(mmdd):
+        month = mmdd[0:2]
+        day = mmdd[2:4]
+        if month.isdecimal() and day.isdecimal():
+            year = datetime.datetime.now().year
+            return int(datetime.datetime(year, int(month), int(day)).timestamp() * 1000)
+
+    @staticmethod
     def hash(request, algorithm='md5', digest='hex'):
         if algorithm == 'keccak':
             binary = bytes(Exchange.web3.sha3(request))
@@ -1682,6 +1690,14 @@ class Exchange(object):
         array = self.sort_by(array, 'timestamp')
         symbol = market['symbol'] if market else None
         return self.filter_by_symbol_since_limit(array, symbol, since, limit)
+
+    def parse_positions(self, positions, symbols=None, since=None, limit=None, params={}):
+        array = self.to_array(positions)
+        array = [self.extend(self.parse_position(position), params) for position in array]
+        array = self.sort_by(array, 'timestamp')
+        if symbols is not None:
+            array = self.filter_by_array(array, 'symbol', symbols)
+        return self.filter_by_since_limit(array, since, limit)
 
     def parse_ledger(self, data, currency=None, since=None, limit=None, params={}):
         array = self.to_array(data)
