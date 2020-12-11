@@ -1117,9 +1117,14 @@ module.exports = class Exchange {
         let result = Object.values (positions || []).map ((position) => this.extend (this.parsePosition (position), params))
         result = sortBy (result, 'timestamp')
         if (symbols) {
-            result = this.filterByArray (result, 'symbol', symbols)
+            result = this.filterByArray (result, 'symbol', symbols, false)
         }
         return this.filterBySinceLimit (result, since, limit)
+    }
+
+    async fetchOpenPositions (symbols = undefined, since = undefined, limit = undefined, params = {}) {
+        const response = await this.fetchPositions (symbols, since, limit, params)
+        return response.filter ((x) => x['status'] === 'open')
     }
 
     parseLedger (data, currency = undefined, since = undefined, limit = undefined, params = {}) {

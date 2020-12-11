@@ -53,6 +53,7 @@ module.exports = class ftx extends Exchange {
                 'fetchTradingFees': true,
                 'fetchWithdrawals': true,
                 'withdraw': true,
+                'fetchPositions': true,
             },
             'timeframes': {
                 '15s': '15',
@@ -1490,7 +1491,10 @@ module.exports = class ftx extends Exchange {
 
     async fetchPositions (symbols = undefined, since = undefined, limit = undefined, params = {}) {
         await this.loadMarkets ();
-        const response = await this.privateGetAccount (params);
+        const request = {
+            'showAvgPrice': true,
+        };
+        const response = await this.privateGetPositions (this.extend (request, params));
         //
         //     {
         //         "result":{
@@ -1537,8 +1541,7 @@ module.exports = class ftx extends Exchange {
         //         "success":true
         //     }
         //
-        const result = this.safeValue (response, 'result', {});
-        const positions = this.safeValue (result, 'positions', []);
+        const positions = this.safeValue (response, 'result', []);
         return this.parsePositions (positions, symbols, since, limit);
     }
 
@@ -1563,11 +1566,16 @@ module.exports = class ftx extends Exchange {
         const rawSymbol = this.safeString (position, 'future');
         let expiry = undefined;
         let symbol = undefined;
+        const quote = 'USD';
         if (rawSymbol !== undefined) {
             const [ baseId, expiryDate ] = rawSymbol.split ('-');
             const base = this.safeCurrencyCode (baseId);
-            symbol = base + '/USD';
-            expiry = this.parseMmdd (expiryDate);
+            symbol = base + '/' + quote;
+            if (expiryDate !== 'PERP') {
+                const month = expiryDate.slice (0, 2);
+                const day = expiryDate.slice (2, 4);
+                expiry = this.parseYYMMDD (undefined, month, day);
+            }
         }
         let side = this.safeString (position, 'side');
         side = (side === 'sell') ? 'short' : 'long';
@@ -1578,17 +1586,15 @@ module.exports = class ftx extends Exchange {
         const pnl = this.sum (realizedPnl, unrealizedPnl);
         const openSize = this.safeFloat (position, 'openSize');
         const collateralUsed = this.safeFloat (position, 'collateralUsed');
+        const price = this.safeFloat (position, 'recentAverageOpenPrice');
         let markPrice = undefined;
-        let totalCollateral = undefined;
-        let freeCollateral = undefined;
+        let collateral = undefined;
         let notational = undefined;
         let maintenanceMargin = undefined;
         let initialMargin = undefined;
         let leverage = undefined;
-        let price = undefined;
         if ((openSize !== undefined) && (openSize !== 0) && (collateralUsed !== undefined)) {
             markPrice = collateralUsed / (openSize * initialMarginPercentage);
-            price = markPrice + (pnl / contracts);
             if (liquidationPrice !== undefined) {
                 const marginDifference = (liquidationPrice / markPrice);
                 let marginFraction = undefined;
@@ -1598,13 +1604,13 @@ module.exports = class ftx extends Exchange {
                     marginFraction = this.sum (marginDifference, maintenanceMarginPercentage, -1);
                 }
                 notational = contracts * markPrice;
-                totalCollateral = marginFraction * notational;
-                freeCollateral = totalCollateral * (1 - initialMarginPercentage);
-                maintenanceMargin = maintenanceMarginPercentage * notational;
+                collateral = marginFraction * notational;
                 initialMargin = initialMarginPercentage * notational;
+                maintenanceMargin = maintenanceMarginPercentage * notational;
                 leverage = 1 / marginFraction;
             }
         }
+        const status = (contracts === 0) ? 'closed' : 'open';
         return {
             'info': position,
             'id': undefined,
@@ -1615,8 +1621,7 @@ module.exports = class ftx extends Exchange {
             'side': side,
             'contracts': contracts,
             'symbol': symbol,
-            'totalCollateral': totalCollateral,
-            'freeCollateral': freeCollateral,
+            'collateral': collateral,
             'realizedPnl': realizedPnl,
             'unrealizedPnl': unrealizedPnl,
             'pnl': pnl,
@@ -1629,6 +1634,9 @@ module.exports = class ftx extends Exchange {
             'notational': notational,
             'expiry': expiry,
             'price': price,
+            'settlementCurrency': quote,
+            'liquidationPrice': liquidationPrice,
+            'status': status,
         };
     }
 

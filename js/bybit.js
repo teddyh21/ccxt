@@ -41,6 +41,7 @@ module.exports = class bybit extends Exchange {
                 'fetchTrades': true,
                 'fetchTransactions': false,
                 'fetchWithdrawals': true,
+                'fetchPositions': true,
             },
             'timeframes': {
                 '1m': '1',
@@ -297,6 +298,7 @@ module.exports = class bybit extends Exchange {
                 'recvWindow': 5 * 1000, // 5 sec default
                 'timeDifference': 0, // the difference between system clock and Binance clock
                 'adjustForTimeDifference': false, // controls the adjustment logic upon instantiation
+                'defaultFutureType': 'linear', // controls whether to fetch linear or 'inverse' futures in fetchPositions
             },
             'fees': {
                 'trading': {
@@ -2225,5 +2227,223 @@ module.exports = class bybit extends Exchange {
             this.throwBroadlyMatchedException (this.exceptions['broad'], body, feedback);
             throw new ExchangeError (feedback); // unknown message
         }
+    }
+
+    async fetchPositions (symbols = undefined, since = undefined, limit = undefined, params = {}) {
+        await this.loadMarkets ();
+        let defaultFutureType = this.safeString (this.options, 'defaultFutureType', 'linear');
+        defaultFutureType = this.safeString (params, 'defaultFutureType', defaultFutureType);
+        params = this.omit (params, 'defaultFutureType');
+        if (symbols !== undefined) {
+            for (let i = 0; i < symbols.length; i++) {
+                const symbol = symbols[i];
+                const market = this.market (symbol);
+                if (market['quote'] === 'USD') {
+                    defaultFutureType = 'inverse';
+                    break;
+                }
+            }
+        }
+        // {
+        //   "ret_code": 0,
+        //   "ret_msg": "OK",
+        //   "ext_code": "",
+        //   "ext_info": "",
+        //   "result": [
+        //     {
+        //       "data": {
+        //         "id": 4440881,
+        //         "user_id": 2004362,
+        //         "risk_id": 1,
+        //         "symbol": "BTCUSD",
+        //         "side": "None",
+        //         "size": 0,
+        //         "position_value": "0",
+        //         "entry_price": "0",
+        //         "is_isolated": false,
+        //         "auto_add_margin": 1,
+        //         "leverage": "100",
+        //         "effective_leverage": "100",
+        //         "position_margin": "0",
+        //         "liq_price": "0",
+        //         "bust_price": "0",
+        //         "occ_closing_fee": "0",
+        //         "occ_funding_fee": "0",
+        //         "take_profit": "0",
+        //         "stop_loss": "0",
+        //         "trailing_stop": "0",
+        //         "position_status": "Normal",
+        //         "deleverage_indicator": 0,
+        //         "oc_calc_data": "{\"blq\":0,\"slq\":0,\"bmp\":0,\"smp\":0,\"bv2c\":0.0115075,\"sv2c\":0.0114925}",
+        //         "order_margin": "0",
+        //         "wallet_balance": "0",
+        //         "realised_pnl": "0",
+        //         "unrealised_pnl": 0,
+        //         "cum_realised_pnl": "0",
+        //         "cross_seq": 0,
+        //         "position_seq": 0,
+        //         "created_at": "2020-12-02T20:11:00Z",
+        //         "updated_at": "2020-12-02T20:11:02.975458Z"
+        //       },
+        //       "is_valid": true
+        //     }, ...
+        let positions = undefined;
+        if (defaultFutureType === 'linear') {
+            const response = await this.privateLinearGetPositionList (params);
+            positions = this.safeValue (response, 'result');
+        } else {
+            const response = await this.privateGetPositionList (params);
+            positions = this.safeValue (response, 'result');
+        }
+        return this.parsePositions (positions, symbols, since, limit);
+    }
+
+    parsePosition (position) {
+        // inverse
+        // {
+        //   "data": {
+        //     "id": 0,
+        //     "user_id": 2004362,
+        //     "risk_id": 11,
+        //     "symbol": "ETHUSD",
+        //     "side": "Buy",
+        //     "size": 100,
+        //     "position_value": "0.16684741",
+        //     "entry_price": "599.35002887",
+        //     "is_isolated": true,
+        //     "auto_add_margin": 0,
+        //     "leverage": "3",
+        //     "effective_leverage": "3",
+        //     "position_margin": "0.05561582",
+        //     "liq_price": "452.95",
+        //     "bust_price": "449.55",
+        //     "occ_closing_fee": "0.00016684",
+        //     "occ_funding_fee": "0",
+        //     "take_profit": "0",
+        //     "stop_loss": "0",
+        //     "trailing_stop": "0",
+        //     "position_status": "Normal",
+        //     "deleverage_indicator": 2,
+        //     "oc_calc_data": "{\"blq\":0,\"slq\":0,\"bmp\":0,\"smp\":0,\"fq\":-100,\"bv2c\":0.33508334,\"sv2c\":0.33458334}",
+        //     "order_margin": "0",
+        //     "wallet_balance": "0.09987486",
+        //     "realised_pnl": "-0.00012514",
+        //     "unrealised_pnl": -0.00024255,
+        //     "cum_realised_pnl": "-0.00012514",
+        //     "cross_seq": 1290352058,
+        //     "position_seq": 0,
+        //     "created_at": "2020-12-02T20:17:22.152150231Z",
+        //     "updated_at": "2020-12-02T22:38:22.587628762Z"
+        //   },
+        //   "is_valid": true
+        // },
+        // linear
+        // { data:
+        //    { user_id: 2004362,
+        //      symbol: 'ETHUSDT',
+        //      side: 'Sell',
+        //      size: 1,
+        //      position_value: 568.25,
+        //      entry_price: 568.25,
+        //      liq_price: 573.9,
+        //      bust_price: 579.6,
+        //      leverage: 50,
+        //      auto_add_margin: 0,
+        //      is_isolated: true,
+        //      position_margin: 11.79971125,
+        //      occ_closing_fee: 0.4347,
+        //      realised_pnl: 0.1420625,
+        //      cum_realised_pnl: 0.1420625,
+        //      free_qty: 1,
+        //      tp_sl_mode: 'Full',
+        //      unrealised_pnl: 0.49,
+        //      deleverage_indicator: 3 },
+        //   is_valid: true }
+        const data = this.safeValue (position, 'data');
+        const isolated = this.safeValue (data, 'is_isolated');
+        const unrealizedPnl = this.safeFloat (data, 'unrealised_pnl');
+        const realizedPnl = undefined; // this.safeFloat (data, 'cum_realised_pnl'); since forever...
+        // you need to take a snapshot of the cum_realised_pnl before opening the position
+        // to know the true value of the pnl of this position
+        const pnl = undefined;
+        const datetime = this.safeString (data, 'created_at');
+        const positionMargin = this.safeFloat (data, 'position_margin');
+        const leverage = this.safeFloat2 (data, 'effective_leverage', 'leverage'); // precision loss
+        const notational = this.safeFloat (data, 'position_value');
+        const contracts = this.safeFloat (data, 'size');
+        const price = this.safeFloat (data, 'entry_price');
+        const liquidationPrice = this.safeFloat (data, 'liq_price');
+        const closeFee = this.safeFloat (data, 'occ_closing_fee');
+        const id = this.safeString (data, 'id');
+        const rawSide = this.safeString (data, 'side');
+        const side = (rawSide === 'Buy') ? 'long' : 'short';
+        const marketId = this.safeString (data, 'symbol');
+        const market = this.safeMarket (marketId);
+        const symbol = market['symbol'];
+        const quote = market['quote'];
+        const base = market['base'];
+        let settlementCurrency = undefined;
+        let hedged = undefined;
+        let initialMargin = undefined;
+        let markPrice = undefined;
+        let maxLoss = undefined;
+        const movement = unrealizedPnl / contracts;
+        if (quote === 'USDT') {
+            hedged = true;
+            settlementCurrency = quote;
+            initialMargin = contracts * price * positionMargin / notational;
+            maxLoss = Math.abs (price - liquidationPrice) * contracts;
+            // the docs are wrong about it being the last price
+            // it is actually the mark price
+            // https://help.bybit.com/hc/en-us/articles/900000630066-P-L-calculations-USDT-Contract-#Unrealized_P&L
+            if (side === 'long') {
+                markPrice = price + movement;
+            } else {
+                markPrice = price - movement;
+            }
+        } else {
+            hedged = false;
+            settlementCurrency = base;
+            initialMargin = positionMargin - closeFee;
+            maxLoss = Math.abs ((1 / price) - (1 / liquidationPrice)) * contracts;
+            const reciprocalPrice = 1 / price;
+            if (side === 'long') {
+                markPrice = 1 / this.sum (reciprocalPrice, -movement);
+            } else {
+                markPrice = 1 / this.sum (reciprocalPrice, movement);
+            }
+        }
+        const collateral = initialMargin + unrealizedPnl;
+        const initialMarginPercentage = initialMargin / notational;
+        const maintenanceMargin = initialMargin - maxLoss;
+        const maintenanceMarginPercentage = maintenanceMargin / notational;
+        const status = (contracts === 0) ? 'closed' : 'open';
+        return {
+            'info': position,
+            'id': id,
+            'timestamp': this.parse8601 (datetime),
+            'datetime': datetime,
+            'isolated': isolated,
+            'hedged': hedged,
+            'side': side,
+            'contracts': contracts,
+            'symbol': symbol,
+            'collateral': collateral,
+            'realizedPnl': realizedPnl,
+            'unrealizedPnl': unrealizedPnl,
+            'pnl': pnl,
+            'maintenanceMarginPercentage': maintenanceMarginPercentage,
+            'maintenanceMargin': maintenanceMargin,
+            'initialMarginPercentage': initialMarginPercentage,
+            'initialMargin': initialMargin,
+            'leverage': leverage,
+            'markPrice': markPrice,
+            'notational': notational,
+            'expiry': undefined,
+            'price': price,
+            'settlementCurrency': settlementCurrency,
+            'liquidationPrice': liquidationPrice,
+            'status': status,
+        };
     }
 };

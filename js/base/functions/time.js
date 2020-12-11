@@ -168,10 +168,15 @@ const ymdhms = (timestamp, infix = ' ') => {
     return Y + '-' + m + '-' + d + infix + H + ':' + M + ':' + S
 }
 
-const parseMmdd = (mmdd) => {
-    const year = new Date ().getUTCFullYear ().toString ()
-    const iso8601 = year + '-' + mmdd.slice (0, 2) + '-' + mmdd.slice (2, 4)
-    return parse8601 (iso8601 + ':')
+const parseYYMMDD = (year = undefined, month = undefined, day = undefined) => {
+    year = year ? year.padStart (4, '20') : new Date ().getUTCFullYear ()
+    month = month ? month - 1 : new Date ().getUTCMonth ()
+    day = day || new Date ().getUTCDay ()
+    const result = new Date ()
+    result.setUTCFullYear (year)
+    result.setUTCMonth (month)
+    result.setUTCDate (day)
+    return result.getTime ()
 }
 
 module.exports =
@@ -190,7 +195,7 @@ module.exports =
         , ymd
         , ymdhms
         , setTimeout_safe
-        , parseMmdd
+        , parseYYMMDD
         , sleep: ms => new Promise (resolve => setTimeout_safe (resolve, ms))
         , TimedOut
         , timeout: async (ms, promise) => {

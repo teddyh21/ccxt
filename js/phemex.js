@@ -300,6 +300,7 @@ module.exports = class phemex extends Exchange {
             'options': {
                 'x-phemex-request-expiry': 60, // in seconds
                 'createOrderByQuoteRequiresPrice': true,
+                'defaultFutureType': 'inverse',
             },
         });
     }
@@ -2353,18 +2354,17 @@ module.exports = class phemex extends Exchange {
 
     async fetchPositions (symbols = undefined, since = undefined, limit = undefined, params = {}) {
         await this.loadMarkets ();
-        const code = this.safeString (params, 'code');
-        const request = {};
-        if (code === undefined) {
-            const currencyId = this.safeString (params, 'currency');
-            if (currencyId === undefined) {
-                throw new ArgumentsRequired (this.id + ' fetchPositions() requires a currency parameter or a code parameter');
-            }
+        const defaultFutureType = this.safeString (this.options, 'defaultFutureType', 'inverse');
+        let code = undefined;
+        if (defaultFutureType === 'inverse') {
+            code = 'BTC';
         } else {
-            const currency = this.currency (code);
-            params = this.omit (params, 'code');
-            request['currency'] = currency['id'];
+            code = 'ETH';
         }
+        const currencyId = this.currencyId (code);
+        const request = {
+            'currency': currencyId,
+        };
         const response = await this.privateGetAccountsAccountPositions (this.extend (request, params));
         //
         //     {
@@ -2445,7 +2445,150 @@ module.exports = class phemex extends Exchange {
         const data = this.safeValue (response, 'data', {});
         const positions = this.safeValue (data, 'positions', []);
         // todo unify parsePosition/parsePositions
-        return positions;
+        return this.parsePositions (positions, symbols, since, limit);
+    }
+
+    parsePosition (position) {
+        // inverse
+        // { accountID: 8113700002,
+        //   symbol: 'ETHUSD',
+        //   currency: 'USD',
+        //   side: 'Sell',
+        //   positionStatus: 'Normal',
+        //   crossMargin: false,
+        //   leverageEr: 500000000,
+        //   leverage: 5,
+        //   initMarginReqEr: 20000000,
+        //   initMarginReq: 0.2,
+        //   maintMarginReqEr: 1000000,
+        //   maintMarginReq: 0.01,
+        //   riskLimitEv: 5000000000,
+        //   riskLimit: 500000,
+        //   size: 14,
+        //   value: 38.85,
+        //   valueEv: 388500,
+        //   avgEntryPriceEp: 5550000,
+        //   avgEntryPrice: 555,
+        //   posCostEv: 78050,
+        //   posCost: 7.805,
+        //   assignedPosBalanceEv: 78050,
+        //   assignedPosBalance: 7.805,
+        //   bankruptCommEv: 350,
+        //   bankruptComm: 0.035,
+        //   bankruptPriceEp: 6660000,
+        //   bankruptPrice: 666,
+        //   positionMarginEv: 77700,
+        //   positionMargin: 7.77,
+        //   liquidationPriceEp: 6604500,
+        //   liquidationPrice: 660.45,
+        //   deleveragePercentileEr: 0,
+        //   deleveragePercentile: 0,
+        //   buyValueToCostEr: 20135000,
+        //   buyValueToCost: 0.20135,
+        //   sellValueToCostEr: 20165000,
+        //   sellValueToCost: 0.20165,
+        //   markPriceEp: 5550862,
+        //   markPrice: 555.0862,
+        //   markValueEv: 0,
+        //   markValue: null,
+        //   unRealisedPosLossEv: 0,
+        //   unRealisedPosLoss: null,
+        //   estimatedOrdLossEv: 0,
+        //   estimatedOrdLoss: 0,
+        //   usedBalanceEv: 78050,
+        //   usedBalance: 7.805,
+        //   takeProfitEp: 0,
+        //   takeProfit: null,
+        //   stopLossEp: 0,
+        //   stopLoss: null,
+        //   cumClosedPnlEv: 0,
+        //   cumFundingFeeEv: 0,
+        //   cumTransactFeeEv: -97,
+        //   realisedPnlEv: 0,
+        //   realisedPnl: null,
+        //   cumRealisedPnlEv: 0,
+        //   cumRealisedPnl: null }
+        const valueEv = this.safeInteger (position, 'valueEv');
+        const avgEntryPriceEp = this.safeInteger (position, 'avgEntryPriceEp');
+        const notational = this.safeFloat (position, 'value', 0);
+        const realizedPnl = this.safeFloat (position, 'cumRealisedPnl');
+        const markPrice = this.safeFloat (position, 'markPrice');
+        const price = this.safeFloat (position, 'avgEntryPrice');
+        const liquidationPrice = this.safeFloat (position, 'liquidationPrice');
+        const rawSide = this.safeString (position, 'side');
+        const side = (rawSide === 'Buy') ? 'long' : 'short';
+        const initialMargin = this.safeFloat (position, 'positionMargin');
+        const marketId = this.safeString (position, 'symbol');
+        const market = this.safeMarket (marketId);
+        const symbol = market['symbol'];
+        const base = market['base'];
+        let unrealizedPnl = undefined;
+        let settlementCurrency = undefined;
+        let contracts = undefined;
+        let maxLoss = undefined;
+        // btc contracts are inverse, all the rest are linear
+        if (base === 'BTC') {
+            settlementCurrency = 'BTC';
+            contracts = this.safeFloat (position, 'size');
+            if (side === 'long') {
+                unrealizedPnl = ((contracts / markPrice) - (contracts / price));
+            } else {
+                unrealizedPnl = ((contracts / price) - (contracts / markPrice));
+            }
+            maxLoss = Math.abs ((1 / price) - (1 / liquidationPrice)) * contracts;
+        } else {
+            settlementCurrency = 'USDT';
+            if ((avgEntryPriceEp !== undefined) && (avgEntryPriceEp > 0)) {
+                contracts = valueEv / avgEntryPriceEp;
+            } else {
+                contracts = 0;
+            }
+            if (side === 'long') {
+                unrealizedPnl = (markPrice - price) * contracts;
+            } else {
+                unrealizedPnl = (price - markPrice) * contracts;
+            }
+            maxLoss = Math.abs (price - liquidationPrice) * contracts;
+        }
+        let pnl = undefined;
+        if ((unrealizedPnl !== undefined) && (realizedPnl !== undefined)) {
+            pnl = this.sum (unrealizedPnl, realizedPnl);
+        }
+        const leverage = this.safeFloat (position, 'leverage');
+        const initialMarginPercentage = this.safeFloat (position, 'initMarginReq');
+        const maintenanceMarginPercentage = this.safeFloat (position, 'maintMarginReq');
+        const maintenanceMargin = initialMargin - maxLoss;
+        const collateral = initialMargin + unrealizedPnl;
+        const status = (contracts === 0) ? 'closed' : 'open';
+        const crossMargin = this.safeValue (position, 'crossMargin', false);
+        const isolated = !crossMargin;
+        return {
+            'info': position,
+            'id': undefined,
+            'timestamp': undefined,
+            'datetime': undefined,
+            'isolated': isolated,
+            'hedged': false,
+            'side': side,
+            'contracts': contracts,
+            'symbol': symbol,
+            'collateral': collateral,
+            'realizedPnl': realizedPnl,
+            'unrealizedPnl': unrealizedPnl,
+            'pnl': pnl,
+            'maintenanceMarginPercentage': maintenanceMarginPercentage,
+            'maintenanceMargin': maintenanceMargin,
+            'initialMarginPercentage': initialMarginPercentage,
+            'initialMargin': initialMargin,
+            'leverage': leverage,
+            'markPrice': markPrice,
+            'notational': notational,
+            'expiry': undefined,
+            'price': price,
+            'settlementCurrency': settlementCurrency,
+            'liquidationPrice': liquidationPrice,
+            'status': status,
+        };
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {

@@ -1821,7 +1821,7 @@ class Exchange {
         }
         $result = $this->sort_by($result, 'timestamp');
         if ($symbols !== null) {
-            $result = $this->filter_by_array($positions, 'symbols', $symbols);
+            $result = $this->filter_by_array($positions, 'symbols', $symbols, false);
         }
         return $this->filter_by_since_limit($result, $since, $limit);
     }

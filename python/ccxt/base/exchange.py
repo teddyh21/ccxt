@@ -1067,12 +1067,12 @@ class Exchange(object):
             return None
 
     @staticmethod
-    def parse_mmdd(mmdd):
-        month = mmdd[0:2]
-        day = mmdd[2:4]
-        if month.isdecimal() and day.isdecimal():
-            year = datetime.datetime.now().year
-            return int(datetime.datetime(year, int(month), int(day)).timestamp() * 1000)
+    def parseYYMMDD(year=None, month=None, day=None):
+        now = datetime.datetime.now()
+        year = now.year if year is None else '20' + str(year)[-2:]
+        month = month or now.month
+        day = day or now.day
+        return int(datetime.datetime(int(year), int(month), int(day)).timestamp() * 1000)
 
     @staticmethod
     def hash(request, algorithm='md5', digest='hex'):
@@ -1696,8 +1696,12 @@ class Exchange(object):
         array = [self.extend(self.parse_position(position), params) for position in array]
         array = self.sort_by(array, 'timestamp')
         if symbols is not None:
-            array = self.filter_by_array(array, 'symbol', symbols)
+            array = self.filter_by_array(array, 'symbol', symbols, False)
         return self.filter_by_since_limit(array, since, limit)
+
+    def fetch_open_positions(self, symbols=None, since=None, limit=None, params={}):
+        response = self.fetch_positions(symbols, since, limit, params)
+        return [position for position in response if position['status'] == 'open']
 
     def parse_ledger(self, data, currency=None, since=None, limit=None, params={}):
         array = self.to_array(data)

@@ -227,6 +227,10 @@ class Exchange(BaseExchange):
         order = await self.fetch_order(id, symbol, params)
         return order['status']
 
+    async def fetch_open_positions(self, symbols=None, since=None, limit=None, params={}):
+        response = await self.fetch_positions(symbols, since, limit, params)
+        return [position for position in response if position['status'] == 'open']
+
     async def fetch_partial_balance(self, part, params={}):
         balance = await self.fetch_balance(params)
         return balance[part]
