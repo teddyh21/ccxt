@@ -328,27 +328,26 @@ $exchange->options['adjustForTimeDifference'] = false;
 
 The unified ccxt API is a subset of methods common among the exchanges. It currently contains the following methods:
 
-- `fetchMarkets ()`: Fetches a list of all available markets from an exchange and returns an array of markets (objects with properties such as `symbol`, `base`, `quote` etc.). Some exchanges do not have means for obtaining a list of markets via their online API. For those, the list of markets is hardcoded. [structure](https://github.com/ccxt/ccxt/wiki/Manual#market-structure)
-- `fetchCurrencies ()`: Fetches  all available currencies an exchange and returns an associative dictionary of currencies (objects with properties such as `code`, `name`, etc.). Some exchanges do not have means for obtaining currencies via their online API. For those, the currencies will be extracted from market pairs or hardcoded. [structure](https://github.com/ccxt/ccxt/wiki/Manual#currency-structure)
-- `loadMarkets ([reload])`: Returns the list of markets as an object indexed by symbol and caches it with the exchange instance. Returns cached markets if loaded already, unless the `reload = true` flag is forced.
-- `fetchOrderBook (symbol[, limit = undefined[, params = {}]])`: Fetch L2/L3 order book for a particular market trading symbol. [structure](https://github.com/ccxt/ccxt/wiki/Manual#orderbook-structure)
+- [`fetchMarkets ([params])`](https://github.com/ccxt/ccxt/wiki/Manual#market-structure): Fetches a list of all available markets from an exchange and returns an array of markets (objects with properties such as `symbol`, `base`, `quote` etc.). Some exchanges do not have means for obtaining a list of markets via their online API. For those, the list of markets is hardcoded.
+- [`fetchCurrencies ([params])`](https://github.com/ccxt/ccxt/wiki/Manual#currency-structure): Fetches  all available currencies an exchange and returns an associative dictionary of currencies (objects with properties such as `code`, `name`, etc.). Some exchanges do not have means for obtaining currencies via their online API. For those, the currencies will be extracted from market pairs or hardcoded. [structure]- `loadMarkets ([reload])`: Returns the list of markets as an object indexed by symbol and caches it with the exchange instance. Returns cached markets if loaded already, unless the `reload = true` flag is forced.
+- [`fetchOrderBook (symbol[, limit = undefined[, params = {}]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure): Fetch L2/L3 order book for a particular market trading symbol.
 - `fetchStatus ([, params = {}])`: Returns information regarding the exchange status from either the info hardcoded in the exchange instance or the API, if available.
 - `fetchL2OrderBook (symbol[, limit = undefined[, params]])`: Level 2 (price-aggregated) order book for a particular symbol.
-- `fetchTrades (symbol[, since[, [limit, [params]]]])`: Fetch recent trades for a particular trading symbol. [structure](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure)
-- `fetchTicker (symbol)`: Fetch latest ticker data by trading symbol. [structure](https://github.com/ccxt/ccxt/wiki/Manual#ticker-structure)
-- `fetchBalance ()`: Fetch Balance. [structure](https://github.com/ccxt/ccxt/wiki/Manual#balance-structure)
+- [`fetchTrades (symbol[, since[, [limit, [params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure): Fetch recent trades for a particular trading symbol. 
+- [`fetchTicker (symbol)`](https://github.com/ccxt/ccxt/wiki/Manual#ticker-structure): Fetch latest ticker data by trading symbol.
+- [`fetchBalance ()`](https://github.com/ccxt/ccxt/wiki/Manual#balance-structure): Fetch Balance.
 - `createOrder (symbol, type, side, amount[, price[, params]])`
 - `createLimitBuyOrder (symbol, amount, price[, params])`
 - `createLimitSellOrder (symbol, amount, price[, params])`
 - `createMarketBuyOrder (symbol, amount[, params])`
 - `createMarketSellOrder (symbol, amount[, params])` 
 - `cancelOrder (id[, symbol[, params]])` 
-- `fetchOrder (id[, symbol[, params]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- `fetchOrders ([symbol[, since[, limit[, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- `fetchOpenOrders ([symbol[, since, limit, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- `fetchClosedOrders ([symbol[, since[, limit[, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- `fetchMyTrades ([symbol[, since[, limit[, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure)
-- `fetchPositions` ([symbols[, since[, limit[, params]]]]) [structure](https://github.com/ccxt/ccxt/wiki/Manual#position-structure)
+- [`fetchOrder (id[, symbol[, params]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchOrders ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchOpenOrders ([symbol[, since, limit, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchClosedOrders ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchMyTrades ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure)
+- [`fetchPositions` ([symbols[, since[, limit[, params]]]])](https://github.com/ccxt/ccxt/wiki/Manual#position-structure)
 - ...
 
 ### Overriding Unified API Params
