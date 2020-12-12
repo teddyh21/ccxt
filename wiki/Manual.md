@@ -324,6 +324,73 @@ $exchange = new $exchange_class(array(
 $exchange->options['adjustForTimeDifference'] = false;
 ```
 
+## Unified API
+
+The unified ccxt API is a subset of methods common among the exchanges. It currently contains the following methods:
+
+- `fetchMarkets ()`: Fetches a list of all available markets from an exchange and returns an array of markets (objects with properties such as `symbol`, `base`, `quote` etc.). Some exchanges do not have means for obtaining a list of markets via their online API. For those, the list of markets is hardcoded. [structure](https://github.com/ccxt/ccxt/wiki/Manual#market-structure)
+- `fetchCurrencies ()`: Fetches  all available currencies an exchange and returns an associative dictionary of currencies (objects with properties such as `code`, `name`, etc.). Some exchanges do not have means for obtaining currencies via their online API. For those, the currencies will be extracted from market pairs or hardcoded. [structure](https://github.com/ccxt/ccxt/wiki/Manual#currency-structure)
+- `loadMarkets ([reload])`: Returns the list of markets as an object indexed by symbol and caches it with the exchange instance. Returns cached markets if loaded already, unless the `reload = true` flag is forced.
+- `fetchOrderBook (symbol[, limit = undefined[, params = {}]])`: Fetch L2/L3 order book for a particular market trading symbol. [structure](https://github.com/ccxt/ccxt/wiki/Manual#orderbook-structure)
+- `fetchStatus ([, params = {}])`: Returns information regarding the exchange status from either the info hardcoded in the exchange instance or the API, if available.
+- `fetchL2OrderBook (symbol[, limit = undefined[, params]])`: Level 2 (price-aggregated) order book for a particular symbol.
+- `fetchTrades (symbol[, since[, [limit, [params]]]])`: Fetch recent trades for a particular trading symbol. [structure](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure)
+- `fetchTicker (symbol)`: Fetch latest ticker data by trading symbol. [structure](https://github.com/ccxt/ccxt/wiki/Manual#ticker-structure)
+- `fetchBalance ()`: Fetch Balance. [structure](https://github.com/ccxt/ccxt/wiki/Manual#balance-structure)
+- `createOrder (symbol, type, side, amount[, price[, params]])`
+- `createLimitBuyOrder (symbol, amount, price[, params])`
+- `createLimitSellOrder (symbol, amount, price[, params])`
+- `createMarketBuyOrder (symbol, amount[, params])`
+- `createMarketSellOrder (symbol, amount[, params])` 
+- `cancelOrder (id[, symbol[, params]])` 
+- `fetchOrder (id[, symbol[, params]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- `fetchOrders ([symbol[, since[, limit[, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- `fetchOpenOrders ([symbol[, since, limit, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- `fetchClosedOrders ([symbol[, since[, limit[, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- `fetchMyTrades ([symbol[, since[, limit[, params]]]])` [structure](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure)
+- `fetchPositions` ([symbols[, since[, limit[, params]]]]) [structure](https://github.com/ccxt/ccxt/wiki/Manual#position-structure)
+- ...
+
+### Overriding Unified API Params
+
+Note, that most of methods of the unified API accept an optional `params` argument. It is an associative array (a dictionary, empty by default) containing the params you want to override. The contents of `params` are exchange-specific, consult the exchanges' API documentation for supported fields and values. Use the `params` dictionary if you need to pass a custom setting or an optional parameter to your unified query.
+
+```JavaScript
+// JavaScript
+(async () => {
+
+    const params = {
+        'foo': 'bar',      // exchange-specific overrides in unified queries
+        'Hello': 'World!', // see their docs for more details on parameter names
+    }
+
+    // the overrides go into the last argument to the unified call ↓ HERE
+    const result = await exchange.fetchOrderBook (symbol, length, params)
+}) ()
+```
+
+```Python
+# Python
+params = {
+    'foo': 'bar',       # exchange-specific overrides in unified queries
+    'Hello': 'World!',  # see their docs for more details on parameter names
+}
+
+# overrides go in the last argument to the unified call ↓ HERE
+result = exchange.fetch_order_book(symbol, length, params)
+```
+
+```PHP
+// PHP
+$params = array (
+    'foo' => 'bar',       // exchange-specific overrides in unified queries
+    'Hello' => 'World!',  // see their docs for more details on parameter names
+}
+
+// overrides go into the last argument to the unified call ↓ HERE
+$result = $exchange->fetch_order_book ($symbol, $length, $params);
+```
+
 ## Exchange Structure
 
 Every exchange has a set of properties and methods, most of which you can override by passing an associative array of params to an exchange constructor. You can also make a subclass and override everything.
@@ -1267,73 +1334,6 @@ To get a list of all available methods with an exchange instance, you can simply
 console.log (new ccxt.kraken ())   // JavaScript
 print(dir(ccxt.hitbtc()))           # Python
 var_dump (new \ccxt\okcoinusd ()); // PHP
-```
-
-## Unified API
-
-The unified ccxt API is a subset of methods common among the exchanges. It currently contains the following methods:
-
-- `fetchMarkets ()`: Fetches a list of all available markets from an exchange and returns an array of markets (objects with properties such as `symbol`, `base`, `quote` etc.). Some exchanges do not have means for obtaining a list of markets via their online API. For those, the list of markets is hardcoded.
-- `fetchCurrencies ()`: Fetches  all available currencies an exchange and returns an associative dictionary of currencies (objects with properties such as `code`, `name`, etc.). Some exchanges do not have means for obtaining currencies via their online API. For those, the currencies will be extracted from market pairs or hardcoded.
-- `loadMarkets ([reload])`: Returns the list of markets as an object indexed by symbol and caches it with the exchange instance. Returns cached markets if loaded already, unless the `reload = true` flag is forced.
-- `fetchOrderBook (symbol[, limit = undefined[, params = {}]])`: Fetch L2/L3 order book for a particular market trading symbol.
-- `fetchStatus ([, params = {}])`: Returns information regarding the exchange status from either the info hardcoded in the exchange instance or the API, if available.
-- `fetchL2OrderBook (symbol[, limit = undefined[, params]])`: Level 2 (price-aggregated) order book for a particular symbol.
-- `fetchTrades (symbol[, since[, [limit, [params]]]])`: Fetch recent trades for a particular trading symbol.
-- `fetchTicker (symbol)`: Fetch latest ticker data by trading symbol.
-- `fetchBalance ()`: Fetch Balance.
-- `createOrder (symbol, type, side, amount[, price[, params]])`
-- `createLimitBuyOrder (symbol, amount, price[, params])`
-- `createLimitSellOrder (symbol, amount, price[, params])`
-- `createMarketBuyOrder (symbol, amount[, params])`
-- `createMarketSellOrder (symbol, amount[, params])`
-- `cancelOrder (id[, symbol[, params]])`
-- `fetchOrder (id[, symbol[, params]])`
-- `fetchOrders ([symbol[, since[, limit[, params]]]])`
-- `fetchOpenOrders ([symbol[, since, limit, params]]]])`
-- `fetchClosedOrders ([symbol[, since[, limit[, params]]]])`
-- `fetchMyTrades ([symbol[, since[, limit[, params]]]])`
-- `fetchPositions` ([symbols[, since[, limit[, params]]]]) [structure](https://github.com/ccxt/ccxt/wiki/Manual#position-structure)
-- ...
-
-### Overriding Unified API Params
-
-Note, that most of methods of the unified API accept an optional `params` argument. It is an associative array (a dictionary, empty by default) containing the params you want to override. The contents of `params` are exchange-specific, consult the exchanges' API documentation for supported fields and values. Use the `params` dictionary if you need to pass a custom setting or an optional parameter to your unified query.
-
-```JavaScript
-// JavaScript
-(async () => {
-
-    const params = {
-        'foo': 'bar',      // exchange-specific overrides in unified queries
-        'Hello': 'World!', // see their docs for more details on parameter names
-    }
-
-    // the overrides go into the last argument to the unified call ↓ HERE
-    const result = await exchange.fetchOrderBook (symbol, length, params)
-}) ()
-```
-
-```Python
-# Python
-params = {
-    'foo': 'bar',       # exchange-specific overrides in unified queries
-    'Hello': 'World!',  # see their docs for more details on parameter names
-}
-
-# overrides go in the last argument to the unified call ↓ HERE
-result = exchange.fetch_order_book(symbol, length, params)
-```
-
-```PHP
-// PHP
-$params = array (
-    'foo' => 'bar',       // exchange-specific overrides in unified queries
-    'Hello' => 'World!',  // see their docs for more details on parameter names
-}
-
-// overrides go into the last argument to the unified call ↓ HERE
-$result = $exchange->fetch_order_book ($symbol, $length, $params);
 ```
 
 ### Pagination
@@ -3239,7 +3239,7 @@ if ($exchange->has['fetchTransactions']) {
 }
 ```
 
-# Positions
+## Positions
 
 ```
 - this part of the unified API is currenty a work in progress
@@ -3251,7 +3251,7 @@ Derivative trading has become increasingly popular within the crypto ecosystem. 
 
 We present a unified structure for the positions returned by exchanges.
 
-## Position Structure
+### Position Structure
 
 ```Javascript
 {
