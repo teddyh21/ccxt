@@ -46,12 +46,10 @@ The structure of the library can be outlined as follows:
 Full public and private HTTP REST APIs for all exchanges are implemented. WebSocket and FIX implementations in JavaScript, PHP, Python are available in [CCXT Pro](https://ccxt.pro), which is a professional addon to CCXT with support for WebSocket streams.
 
 - [Exchanges](#exchanges)
+- [Unified API](#unified-api)
 - [Markets](#markets)
-- [API Methods / Endpoints](#api-methods--endpoints)
 - [Market Data](#market-data)
 - [Trading](#trading)
-- [Trades](#trades)
-
 
 # Exchanges
 
@@ -184,6 +182,76 @@ The CCXT library currently supports the following 123 cryptocurrency exchange ma
 | [![zb](https://user-images.githubusercontent.com/1294454/32859187-cd5214f0-ca5e-11e7-967d-96568e2e2bd1.jpg)](https://www.zb.com)                                                                 | zb                 | [ZB](https://www.zb.com)                                                                | 1   | [API](https://www.zb.com/i/developer)                                                       |                                                                                                                             |                                                                              |
 
 Besides making basic market and limit orders, some exchanges offer margin trading (leverage), various derivatives (like futures contracts and options) and also have [dark pools](https://en.wikipedia.org/wiki/Dark_pool), [OTC](https://en.wikipedia.org/wiki/Over-the-counter_(finance)) (over-the-counter trading), merchant APIs and much more.
+
+
+## Unified API
+
+The unified ccxt API is a subset of methods common among the exchanges. It currently contains the following methods:
+
+- [`fetchMarkets ([params])`](https://github.com/ccxt/ccxt/wiki/Manual#market-structure): Fetches a list of all available markets from an exchange and returns an array of markets (objects with properties such as `symbol`, `base`, `quote` etc.). Some exchanges do not have means for obtaining a list of markets via their online API. For those, the list of markets is hardcoded.
+- [`fetchCurrencies ([params])`](https://github.com/ccxt/ccxt/wiki/Manual#currency-structure): Fetches  all available currencies an exchange and returns an associative dictionary of currencies (objects with properties such as `code`, `name`, etc.). Some exchanges do not have means for obtaining currencies via their online API. For those, the currencies will be extracted from market pairs or hardcoded. [structure]- `loadMarkets ([reload])`: Returns the list of markets as an object indexed by symbol and caches it with the exchange instance. Returns cached markets if loaded already, unless the `reload = true` flag is forced.
+- [`fetchOrderBook (symbol[, limit = undefined[, params = {}]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure): Fetch L2/L3 order book for a particular market trading symbol.
+- `fetchStatus ([, params = {}])`: Returns information regarding the exchange status from either the info hardcoded in the exchange instance or the API, if available.
+- `fetchL2OrderBook (symbol[, limit = undefined[, params]])`: Level 2 (price-aggregated) order book for a particular symbol.
+- [`fetchTicker (symbol)`](https://github.com/ccxt/ccxt/wiki/Manual#ticker-structure): Fetch latest ticker data by trading symbol.
+- [`fetchBalance ()`](https://github.com/ccxt/ccxt/wiki/Manual#balance-structure): Fetch Balance.
+- `createOrder (symbol, type, side, amount[, price[, params]])`
+- `createLimitBuyOrder (symbol, amount, price[, params])`
+- `createLimitSellOrder (symbol, amount, price[, params])`
+- `createMarketBuyOrder (symbol, amount[, params])`
+- `createMarketSellOrder (symbol, amount[, params])` 
+- `cancelOrder (id[, symbol[, params]])` 
+- [`fetchOrder (id[, symbol[, params]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchOrders ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchOpenOrders ([symbol[, since, limit, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchClosedOrders ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
+- [`fetchTrades (symbol[, since[, [limit, [params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure): Fetch recent trades for a particular trading symbol. 
+- [`fetchMyTrades ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure)
+- [`fetchTransactions ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#transaction-structure)
+- [`fetchWithdrawals ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#transaction-structure)
+- [`fetchDepositions ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#transaction-structure)
+- [`fetchPositions` ([symbols[, since[, limit[, params]]]])](https://github.com/ccxt/ccxt/wiki/Manual#position-structure)
+- ...
+
+### Overriding Unified API Params
+
+Note, that most of methods of the unified API accept an optional `params` argument. It is an associative array (a dictionary, empty by default) containing the params you want to override. The contents of `params` are exchange-specific, consult the exchanges' API documentation for supported fields and values. Use the `params` dictionary if you need to pass a custom setting or an optional parameter to your unified query.
+
+```JavaScript
+// JavaScript
+(async () => {
+
+    const params = {
+        'foo': 'bar',      // exchange-specific overrides in unified queries
+        'Hello': 'World!', // see their docs for more details on parameter names
+    }
+
+    // the overrides go into the last argument to the unified call ↓ HERE
+    const result = await exchange.fetchOrderBook (symbol, length, params)
+}) ()
+```
+
+```Python
+# Python
+params = {
+    'foo': 'bar',       # exchange-specific overrides in unified queries
+    'Hello': 'World!',  # see their docs for more details on parameter names
+}
+
+# overrides go in the last argument to the unified call ↓ HERE
+result = exchange.fetch_order_book(symbol, length, params)
+```
+
+```PHP
+// PHP
+$params = array (
+    'foo' => 'bar',       // exchange-specific overrides in unified queries
+    'Hello' => 'World!',  // see their docs for more details on parameter names
+}
+
+// overrides go into the last argument to the unified call ↓ HERE
+$result = $exchange->fetch_order_book ($symbol, $length, $params);
+```
 
 ## Instantiation
 
@@ -322,72 +390,6 @@ $exchange = new $exchange_class(array(
     ),
 ));
 $exchange->options['adjustForTimeDifference'] = false;
-```
-
-## Unified API
-
-The unified ccxt API is a subset of methods common among the exchanges. It currently contains the following methods:
-
-- [`fetchMarkets ([params])`](https://github.com/ccxt/ccxt/wiki/Manual#market-structure): Fetches a list of all available markets from an exchange and returns an array of markets (objects with properties such as `symbol`, `base`, `quote` etc.). Some exchanges do not have means for obtaining a list of markets via their online API. For those, the list of markets is hardcoded.
-- [`fetchCurrencies ([params])`](https://github.com/ccxt/ccxt/wiki/Manual#currency-structure): Fetches  all available currencies an exchange and returns an associative dictionary of currencies (objects with properties such as `code`, `name`, etc.). Some exchanges do not have means for obtaining currencies via their online API. For those, the currencies will be extracted from market pairs or hardcoded. [structure]- `loadMarkets ([reload])`: Returns the list of markets as an object indexed by symbol and caches it with the exchange instance. Returns cached markets if loaded already, unless the `reload = true` flag is forced.
-- [`fetchOrderBook (symbol[, limit = undefined[, params = {}]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure): Fetch L2/L3 order book for a particular market trading symbol.
-- `fetchStatus ([, params = {}])`: Returns information regarding the exchange status from either the info hardcoded in the exchange instance or the API, if available.
-- `fetchL2OrderBook (symbol[, limit = undefined[, params]])`: Level 2 (price-aggregated) order book for a particular symbol.
-- [`fetchTrades (symbol[, since[, [limit, [params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure): Fetch recent trades for a particular trading symbol. 
-- [`fetchTicker (symbol)`](https://github.com/ccxt/ccxt/wiki/Manual#ticker-structure): Fetch latest ticker data by trading symbol.
-- [`fetchBalance ()`](https://github.com/ccxt/ccxt/wiki/Manual#balance-structure): Fetch Balance.
-- `createOrder (symbol, type, side, amount[, price[, params]])`
-- `createLimitBuyOrder (symbol, amount, price[, params])`
-- `createLimitSellOrder (symbol, amount, price[, params])`
-- `createMarketBuyOrder (symbol, amount[, params])`
-- `createMarketSellOrder (symbol, amount[, params])` 
-- `cancelOrder (id[, symbol[, params]])` 
-- [`fetchOrder (id[, symbol[, params]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- [`fetchOrders ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- [`fetchOpenOrders ([symbol[, since, limit, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- [`fetchClosedOrders ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#order-structure)
-- [`fetchMyTrades ([symbol[, since[, limit[, params]]]])`](https://github.com/ccxt/ccxt/wiki/Manual#trade-structure)
-- [`fetchPositions` ([symbols[, since[, limit[, params]]]])](https://github.com/ccxt/ccxt/wiki/Manual#position-structure)
-- ...
-
-### Overriding Unified API Params
-
-Note, that most of methods of the unified API accept an optional `params` argument. It is an associative array (a dictionary, empty by default) containing the params you want to override. The contents of `params` are exchange-specific, consult the exchanges' API documentation for supported fields and values. Use the `params` dictionary if you need to pass a custom setting or an optional parameter to your unified query.
-
-```JavaScript
-// JavaScript
-(async () => {
-
-    const params = {
-        'foo': 'bar',      // exchange-specific overrides in unified queries
-        'Hello': 'World!', // see their docs for more details on parameter names
-    }
-
-    // the overrides go into the last argument to the unified call ↓ HERE
-    const result = await exchange.fetchOrderBook (symbol, length, params)
-}) ()
-```
-
-```Python
-# Python
-params = {
-    'foo': 'bar',       # exchange-specific overrides in unified queries
-    'Hello': 'World!',  # see their docs for more details on parameter names
-}
-
-# overrides go in the last argument to the unified call ↓ HERE
-result = exchange.fetch_order_book(symbol, length, params)
-```
-
-```PHP
-// PHP
-$params = array (
-    'foo' => 'bar',       // exchange-specific overrides in unified queries
-    'Hello' => 'World!',  // see their docs for more details on parameter names
-}
-
-// overrides go into the last argument to the unified call ↓ HERE
-$result = $exchange->fetch_order_book ($symbol, $length, $params);
 ```
 
 ## Exchange Structure
@@ -977,6 +979,50 @@ Apart from the market info, the `loadMarkets()` call will also load the currenci
 
 The user can also bypass the cache and call unified methods for fetching that information from the exchange endpoints directly, `fetchMarkets()` and `fetchCurrencies()`, though using these methods is not recommended for end-users. The recommended way to preload markets is by calling the `loadMarkets()` unified method. However, new exchange integrations are required to implement these methods if the underlying exchange has the corresponding API endpoints.
 
+## Market Cache Force Reload
+
+The `loadMarkets () / load_markets ()` is also a dirty method with a side effect of saving the array of markets on the exchange instance. You only need to call it once per exchange. All subsequent calls to the same method will return the locally saved (cached) array of markets.
+
+When exchange markets are loaded, you can then access market information any time via the `markets` property. This property contains an associative array of markets indexed by symbol. If you need to force reload the list of markets after you have them loaded already, pass the reload = true flag to the same method again.
+
+```JavaScript
+// JavaScript
+(async () => {
+    let kraken = new ccxt.kraken ({ verbose: true }) // log HTTP requests
+    await kraken.load_markets () // request markets
+    console.log (kraken.id, kraken.markets)    // output a full list of all loaded markets
+    console.log (Object.keys (kraken.markets)) // output a short list of market symbols
+    console.log (kraken.markets['BTC/USD'])    // output single market details
+    await kraken.load_markets () // return a locally cached version, no reload
+    let reloadedMarkets = await kraken.load_markets (true) // force HTTP reload = true
+    console.log (reloadedMarkets['ETH/BTC'])
+}) ()
+```
+
+```Python
+# Python
+poloniex = ccxt.poloniex({'verbose': True}) # log HTTP requests
+poloniex.load_markets() # request markets
+print(poloniex.id, poloniex.markets)   # output a full list of all loaded markets
+print(list(poloniex.markets.keys())) # output a short list of market symbols
+print(poloniex.markets['BTC/ETH'])     # output single market details
+poloniex.load_markets() # return a locally cached version, no reload
+reloadedMarkets = poloniex.load_markets(True) # force HTTP reload = True
+print(reloadedMarkets['ETH/ZEC'])
+```
+
+```PHP
+// PHP
+$bitfinex = new \ccxt\bitfinex (array ('verbose' => true)); // log HTTP requests
+$bitfinex.load_markets (); // request markets
+var_dump ($bitfinex->id, $bitfinex->markets); // output a full list of all loaded markets
+var_dump (array_keys ($bitfinex->markets));   // output a short list of market symbols
+var_dump ($bitfinex->markets['XRP/USD']);     // output single market details
+$bitfinex->load_markets (); // return a locally cached version, no reload
+$reloadedMarkets = $bitfinex->load_markets (true); // force HTTP reload = true
+var_dump ($bitfinex->markets['XRP/BTC']);
+```
+
 ## Symbols And Market Ids
 
 Market ids are used during the REST request-response process to reference trading pairs within exchanges. The set of market ids is unique per exchange and cannot be used across exchanges. For example, the BTC/USD pair/market may have different ids on various popular exchanges, like `btcusd`, `BTCUSD`, `XBTUSD`, `btc/usd`, `42` (numeric id), `BTC/USD`, `Btc/Usd`, `tBTCUSD`, `XXBTZUSD`. You don't need to remember or use market ids, they are there for internal HTTP request-response purposes inside exchange implementations.
@@ -1134,50 +1180,6 @@ base currency ↓
                     ↑ quote currency
 ```
 
-## Market Cache Force Reload
-
-The `loadMarkets () / load_markets ()` is also a dirty method with a side effect of saving the array of markets on the exchange instance. You only need to call it once per exchange. All subsequent calls to the same method will return the locally saved (cached) array of markets.
-
-When exchange markets are loaded, you can then access market information any time via the `markets` property. This property contains an associative array of markets indexed by symbol. If you need to force reload the list of markets after you have them loaded already, pass the reload = true flag to the same method again.
-
-```JavaScript
-// JavaScript
-(async () => {
-    let kraken = new ccxt.kraken ({ verbose: true }) // log HTTP requests
-    await kraken.load_markets () // request markets
-    console.log (kraken.id, kraken.markets)    // output a full list of all loaded markets
-    console.log (Object.keys (kraken.markets)) // output a short list of market symbols
-    console.log (kraken.markets['BTC/USD'])    // output single market details
-    await kraken.load_markets () // return a locally cached version, no reload
-    let reloadedMarkets = await kraken.load_markets (true) // force HTTP reload = true
-    console.log (reloadedMarkets['ETH/BTC'])
-}) ()
-```
-
-```Python
-# Python
-poloniex = ccxt.poloniex({'verbose': True}) # log HTTP requests
-poloniex.load_markets() # request markets
-print(poloniex.id, poloniex.markets)   # output a full list of all loaded markets
-print(list(poloniex.markets.keys())) # output a short list of market symbols
-print(poloniex.markets['BTC/ETH'])     # output single market details
-poloniex.load_markets() # return a locally cached version, no reload
-reloadedMarkets = poloniex.load_markets(True) # force HTTP reload = True
-print(reloadedMarkets['ETH/ZEC'])
-```
-
-```PHP
-// PHP
-$bitfinex = new \ccxt\bitfinex (array ('verbose' => true)); // log HTTP requests
-$bitfinex.load_markets (); // request markets
-var_dump ($bitfinex->id, $bitfinex->markets); // output a full list of all loaded markets
-var_dump (array_keys ($bitfinex->markets));   // output a short list of market symbols
-var_dump ($bitfinex->markets['XRP/USD']);     // output single market details
-$bitfinex->load_markets (); // return a locally cached version, no reload
-$reloadedMarkets = $bitfinex->load_markets (true); // force HTTP reload = true
-var_dump ($bitfinex->markets['XRP/BTC']);
-```
-
 # API Methods / Endpoints
 
 Each exchange offers a set of API methods. Each method of the API is called an *endpoint*. Endpoints are HTTP URLs for querying various types of information. All endpoints return JSON in response to client requests.
@@ -1220,13 +1222,12 @@ A public API is used to access market data and does not require any authenticati
 
 Public APIs include the following:
 
-- instruments/trading pairs
+- market information
 - price feeds (exchange rates)
 - order books (L1, L2, L3...)
 - trade history (closed orders, transactions, executions)
 - tickers (spot / 24h price)
 - OHLCV series for charting
-- other public endpoints
 
 For trading with private API you need to obtain API keys from/to exchanges. It often means registering with exchanges and creating API keys with your account. Most exchanges require personal info or identification. Some kind of verification may be necessary as well.
 
@@ -1240,6 +1241,7 @@ Private APIs allow the following:
 - create deposit addresses and fund accounts
 - request withdrawal of fiat and crypto funds
 - query personal open / closed orders
+- query personal trades
 - query positions in margin/leverage trading
 - get ledger history
 - transfer funds between accounts
@@ -1935,17 +1937,7 @@ A general solution for fetching all tickers from all exchanges (even the ones th
 UNDER CONSTRUCTION
 ```
 
-#### Async Mode / Concurrency
-
-```
-UNDER CONSTRUCTION
-```
-
 ## OHLCV Candlestick Charts
-
-```diff
-- this is under heavy development right now, contributions appreciated
-```
 
 Most exchanges have endpoints for fetching OHLCV data, but some of them don't. The exchange boolean (true/false) property named `has['fetchOHLCV']` indicates whether the exchange supports candlestick data series or not.
 
