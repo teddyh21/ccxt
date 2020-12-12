@@ -49,8 +49,8 @@ module.exports = class kucoin extends Exchange {
                 'logo': 'https://user-images.githubusercontent.com/51840849/87295558-132aaf80-c50e-11ea-9801-a2fb0c57c799.jpg',
                 'referral': 'https://www.kucoin.com/?rcode=E5wkqe',
                 'api': {
-                    'public': 'https://openapi-v2.kucoin.com',
-                    'private': 'https://openapi-v2.kucoin.com',
+                    'spot': 'https://openapi-v2.kucoin.com',
+                    'futures': 'https://api-futures.kucoin.com',
                 },
                 'test': {
                     'public': 'https://openapi-sandbox.kucoin.com',
@@ -67,86 +67,100 @@ module.exports = class kucoin extends Exchange {
                 'password': true,
             },
             'api': {
-                'public': {
-                    'get': [
-                        'timestamp',
-                        'status',
-                        'symbols',
-                        'markets',
-                        'market/allTickers',
-                        'market/orderbook/level{level}',
-                        'market/orderbook/level2',
-                        'market/orderbook/level2_20',
-                        'market/orderbook/level2_100',
-                        'market/orderbook/level3',
-                        'market/histories',
-                        'market/candles',
-                        'market/stats',
-                        'currencies',
-                        'currencies/{currency}',
-                        'prices',
-                        'mark-price/{symbol}/current',
-                        'margin/config',
-                    ],
-                    'post': [
-                        'bullet-public',
-                    ],
+                'spot': {
+                    'public': {
+                        'get': [
+                            'timestamp',
+                            'status',
+                            'symbols',
+                            'markets',
+                            'market/allTickers',
+                            'market/orderbook/level{level}',
+                            'market/orderbook/level2',
+                            'market/orderbook/level2_20',
+                            'market/orderbook/level2_100',
+                            'market/orderbook/level3',
+                            'market/histories',
+                            'market/candles',
+                            'market/stats',
+                            'currencies',
+                            'currencies/{currency}',
+                            'prices',
+                            'mark-price/{symbol}/current',
+                            'margin/config',
+                        ],
+                        'post': [
+                            'bullet-public',
+                        ],
+                    },
+                    'private': {
+                        'get': [
+                            'accounts',
+                            'accounts/{accountId}',
+                            'accounts/{accountId}/ledgers',
+                            'accounts/{accountId}/holds',
+                            'accounts/transferable',
+                            'sub/user',
+                            'sub-accounts',
+                            'sub-accounts/{subUserId}',
+                            'deposit-addresses',
+                            'deposits',
+                            'hist-deposits',
+                            'hist-orders',
+                            'hist-withdrawals',
+                            'withdrawals',
+                            'withdrawals/quotas',
+                            'orders',
+                            'orders/{orderId}',
+                            'limit/orders',
+                            'fills',
+                            'limit/fills',
+                            'margin/account',
+                            'margin/borrow',
+                            'margin/borrow/outstanding',
+                            'margin/borrow/borrow/repaid',
+                            'margin/lend/active',
+                            'margin/lend/done',
+                            'margin/lend/trade/unsettled',
+                            'margin/lend/trade/settled',
+                            'margin/lend/assets',
+                            'margin/market',
+                            'margin/trade/last',
+                        ],
+                        'post': [
+                            'accounts',
+                            'accounts/inner-transfer',
+                            'accounts/sub-transfer',
+                            'deposit-addresses',
+                            'withdrawals',
+                            'orders',
+                            'orders/multi',
+                            'margin/borrow',
+                            'margin/repay/all',
+                            'margin/repay/single',
+                            'margin/lend',
+                            'margin/toggle-auto-lend',
+                            'bullet-private',
+                        ],
+                        'delete': [
+                            'withdrawals/{withdrawalId}',
+                            'orders',
+                            'orders/{orderId}',
+                            'margin/lend/{orderId}',
+                        ],
+                    },
                 },
-                'private': {
-                    'get': [
-                        'accounts',
-                        'accounts/{accountId}',
-                        'accounts/{accountId}/ledgers',
-                        'accounts/{accountId}/holds',
-                        'accounts/transferable',
-                        'sub/user',
-                        'sub-accounts',
-                        'sub-accounts/{subUserId}',
-                        'deposit-addresses',
-                        'deposits',
-                        'hist-deposits',
-                        'hist-orders',
-                        'hist-withdrawals',
-                        'withdrawals',
-                        'withdrawals/quotas',
-                        'orders',
-                        'orders/{orderId}',
-                        'limit/orders',
-                        'fills',
-                        'limit/fills',
-                        'margin/account',
-                        'margin/borrow',
-                        'margin/borrow/outstanding',
-                        'margin/borrow/borrow/repaid',
-                        'margin/lend/active',
-                        'margin/lend/done',
-                        'margin/lend/trade/unsettled',
-                        'margin/lend/trade/settled',
-                        'margin/lend/assets',
-                        'margin/market',
-                        'margin/trade/last',
-                    ],
-                    'post': [
-                        'accounts',
-                        'accounts/inner-transfer',
-                        'accounts/sub-transfer',
-                        'deposit-addresses',
-                        'withdrawals',
-                        'orders',
-                        'orders/multi',
-                        'margin/borrow',
-                        'margin/repay/all',
-                        'margin/repay/single',
-                        'margin/lend',
-                        'margin/toggle-auto-lend',
-                        'bullet-private',
-                    ],
-                    'delete': [
-                        'withdrawals/{withdrawalId}',
-                        'orders',
-                        'orders/{orderId}',
-                        'margin/lend/{orderId}',
-                    ],
+                'futures': {
+                    'public': {
+                        'get': [
+                            'contracts/active',
+                        ],
+                    },
+                    'private': {
+                        'get': [
+                            'positions',
+                        ],
+                    },
                 },
             },
             'timeframes': {
@@ -231,6 +245,7 @@ module.exports = class kucoin extends Exchange {
                 'fetchBalance': {
                     'type': 'trade', // or 'main'
                 },
+                'fetchMarkets': [ 'spot', 'swap' ],
                 // endpoint versions
                 'versions': {
                     'public': {
@@ -258,7 +273,7 @@ module.exports = class kucoin extends Exchange {
     }
 
     async loadTimeDifference (params = {}) {
-        const response = await this.publicGetTimestamp (params);
+        const response = await this.spotPublicGetTimestamp (params);
         const after = this.milliseconds ();
         const kucoinTime = this.safeInteger (response, 'data');
         this.options['timeDifference'] = parseInt (after - kucoinTime);
@@ -266,7 +281,7 @@ module.exports = class kucoin extends Exchange {
     }
 
     async fetchTime (params = {}) {
-        const response = await this.publicGetTimestamp (params);
+        const response = await this.spotPublicGetTimestamp (params);
         //
         //     {
         //         "code":"200000",
@@ -278,7 +293,7 @@ module.exports = class kucoin extends Exchange {
     }
 
     async fetchStatus (params = {}) {
-        const response = await this.publicGetStatus (params);
+        const response = await this.spotPublicGetStatus (params);
         //
         //     {
         //         "code":"200000",
@@ -301,74 +316,186 @@ module.exports = class kucoin extends Exchange {
     }
 
     async fetchMarkets (params = {}) {
-        const response = await this.publicGetSymbols (params);
-        //
-        //     {
-        //         quoteCurrency: 'BTC',
-        //         symbol: 'KCS-BTC',
-        //         quoteMaxSize: '9999999',
-        //         quoteIncrement: '0.000001',
-        //         baseMinSize: '0.01',
-        //         quoteMinSize: '0.00001',
-        //         enableTrading: true,
-        //         priceIncrement: '0.00000001',
-        //         name: 'KCS-BTC',
-        //         baseIncrement: '0.01',
-        //         baseMaxSize: '9999999',
-        //         baseCurrency: 'KCS'
-        //     }
-        //
-        const data = response['data'];
-        const result = [];
-        for (let i = 0; i < data.length; i++) {
-            const market = data[i];
-            const id = this.safeString (market, 'symbol');
-            const [ baseId, quoteId ] = id.split ('-');
-            const base = this.safeCurrencyCode (baseId);
-            const quote = this.safeCurrencyCode (quoteId);
-            const symbol = base + '/' + quote;
-            const active = this.safeValue (market, 'enableTrading');
-            const baseMaxSize = this.safeFloat (market, 'baseMaxSize');
-            const baseMinSize = this.safeFloat (market, 'baseMinSize');
-            const quoteMaxSize = this.safeFloat (market, 'quoteMaxSize');
-            const quoteMinSize = this.safeFloat (market, 'quoteMinSize');
-            // const quoteIncrement = this.safeFloat (market, 'quoteIncrement');
-            const precision = {
-                'amount': this.precisionFromString (this.safeString (market, 'baseIncrement')),
-                'price': this.precisionFromString (this.safeString (market, 'priceIncrement')),
-            };
-            const limits = {
-                'amount': {
-                    'min': baseMinSize,
-                    'max': baseMaxSize,
-                },
-                'price': {
-                    'min': this.safeFloat (market, 'priceIncrement'),
-                    'max': quoteMaxSize / baseMinSize,
-                },
-                'cost': {
-                    'min': quoteMinSize,
-                    'max': quoteMaxSize,
-                },
-            };
-            result.push ({
-                'id': id,
-                'symbol': symbol,
-                'baseId': baseId,
-                'quoteId': quoteId,
-                'base': base,
-                'quote': quote,
-                'active': active,
-                'precision': precision,
-                'limits': limits,
-                'info': market,
-            });
+        const types = this.safeValue (this.options, 'fetchMarkets');
+        let result = [];
+        for (let i = 0; i < types.length; i++) {
+            const markets = await this.fetchMarketsByType (types[i], params);
+            result = this.arrayConcat (result, markets);
         }
         return result;
     }
 
+    async fetchMarketsByType (type, params = {}) {
+        let response = undefined;
+        if (type === 'spot') {
+            response = await this.spotPublicGetSymbols (params);
+        } else if (type === 'swap') {
+            response = await this.futuresPublicGetContractsActive (params);
+        }
+        const markets = this.safeValue (response, 'data', []);
+        return this.parseMarkets (markets);
+    }
+
+    parseMarkets (markets) {
+        const result = [];
+        for (let i = 0; i < markets.length; i++) {
+            result.push (this.parseMarket (markets[i]));
+        }
+        return result;
+    }
+
+    parseMarket (market) {
+        // spot
+        // {
+        //   symbol: 'ETC-BTC',
+        //   name: 'ETC-BTC',
+        //   baseCurrency: 'ETC',
+        //   quoteCurrency: 'BTC',
+        //   feeCurrency: 'BTC',
+        //   market: 'BTC',
+        //   baseMinSize: '0.01',
+        //   quoteMinSize: '0.00001',
+        //   baseMaxSize: '10000000000',
+        //   quoteMaxSize: '99999999',
+        //   baseIncrement: '0.000001',
+        //   quoteIncrement: '0.00000001',
+        //   priceIncrement: '0.0000001',
+        //   priceLimitRate: '0.1',
+        //   isMarginEnabled: false,
+        //   enableTrading: true
+        // }
+        // future
+        // {
+        //   symbol: 'XBTUSDTM',
+        //   rootSymbol: 'USDT',
+        //   type: 'FFWCSX',
+        //   firstOpenDate: 1585555200000,
+        //   expireDate: null,
+        //   settleDate: null,
+        //   baseCurrency: 'XBT',
+        //   quoteCurrency: 'USDT',
+        //   settleCurrency: 'USDT',
+        //   maxOrderQty: 1000000,
+        //   maxPrice: 1000000,
+        //   lotSize: 1,
+        //   tickSize: 1,
+        //   indexPriceTickSize: 0.01,
+        //   multiplier: 0.001,
+        //   initialMargin: 0.01,
+        //   maintainMargin: 0.005,
+        //   maxRiskLimit: 2000000,
+        //   minRiskLimit: 2000000,
+        //   riskStep: 1000000,
+        //   makerFeeRate: 0.0002,
+        //   takerFeeRate: 0.0006,
+        //   takerFixFee: 0,
+        //   makerFixFee: 0,
+        //   settlementFee: null,
+        //   isDeleverage: true,
+        //   isQuanto: true,
+        //   isInverse: false,
+        //   markMethod: 'FairPrice',
+        //   fairMethod: 'FundingRate',
+        //   fundingBaseSymbol: '.XBTINT8H',
+        //   fundingQuoteSymbol: '.USDTINT8H',
+        //   fundingRateSymbol: '.XBTUSDTMFPI8H',
+        //   indexSymbol: '.KXBTUSDT',
+        //   settlementSymbol: '',
+        //   status: 'Open',
+        //   fundingFeeRate: -0.000075,
+        //   predictedFundingFeeRate: 0.000046,
+        //   openInterest: '1647782',
+        //   turnoverOf24h: 77743958.40371895,
+        //   volumeOf24h: 4259.1,
+        //   markPrice: 18394.76,
+        //   indexPrice: 18395.28,
+        //   lastTradePrice: 18387,
+        //   nextFundingRateTime: 10834071,
+        //   maxLeverage: 100,
+        //   sourceExchanges: [ 'huobi', 'Okex', 'Binance', 'Kucoin', 'Poloniex', 'Hitbtc' ],
+        //   premiumsSymbol1M: '.XBTUSDTMPI',
+        //   premiumsSymbol8H: '.XBTUSDTMPI8H',
+        //   fundingBaseSymbol1M: '.XBTINT',
+        //   fundingQuoteSymbol1M: '.USDTINT'
+        // }
+        const id = this.safeString (market, 'symbol');
+        const baseId = this.safeString (market, 'baseCurrency');
+        const quoteId = this.safeString (market, 'quoteCurrency');
+        const base = this.safeCurrencyCode (baseId);
+        const quote = this.safeCurrencyCode (quoteId);
+        let symbol = base + '/' + quote;
+        const active = this.safeValue (market, 'enableTrading');
+        let baseMaxSize = this.safeFloat (market, 'baseMaxSize');
+        let contractSize = undefined;
+        if (baseMaxSize === undefined) {
+            contractSize = this.safeFloat (market, 'multiplier');
+            baseMaxSize = this.safeFloat (market, 'maxOrderQty') * contractSize;
+        }
+        const baseMinSize = this.safeFloat (market, 'baseMinSize');
+        const quoteMaxSize = this.safeFloat (market, 'quoteMaxSize');
+        const quoteMinSize = this.safeFloat (market, 'quoteMinSize');
+        const expiry = this.safeString (market, 'expireDate');
+        // const quoteIncrement = this.safeFloat (market, 'quoteIncrement');
+        let type = undefined;
+        let precision = undefined;
+        let priceIncrement = undefined;
+        let maxPrice = undefined;
+        if ('market' in market) {
+            type = 'spot';
+            precision = {
+                'amount': this.precisionFromString (this.safeString2 (market, 'baseIncrement')),
+                'price': this.precisionFromString (this.safeString2 (market, 'priceIncrement')),
+            };
+            priceIncrement = this.safeFloat (market, 'priceIncrement');
+            maxPrice = quoteMaxSize / baseMinSize;
+        } else {
+            if (expiry === undefined) {
+                type = 'swap';
+                symbol = symbol + '-PERP';
+            } else {
+                type = 'future';
+                symbol = symbol + '-' + expiry;
+            }
+            priceIncrement = this.safeInteger (market, 'tickSize')
+            precision = {
+                'amount': this.safeInteger (market, 'lotSize'),
+                'price': -Math.log10 (priceIncrement),
+            };
+            maxPrice = this.safeFloat (market, 'maxPrice');
+        }
+        const limits = {
+            'amount': {
+                'min': baseMinSize,
+                'max': baseMaxSize,
+            },
+            'price': {
+                'min': priceIncrement,
+                'max': maxPrice,
+            },
+            'cost': {
+                'min': quoteMinSize,
+                'max': quoteMaxSize,
+            },
+        };
+        return {
+            'id': id,
+            'symbol': symbol,
+            'baseId': baseId,
+            'quoteId': quoteId,
+            'base': base,
+            'quote': quote,
+            'active': active,
+            'type': type,
+            'contractSize': contractSize,
+            'expiry': expiry,
+            'precision': precision,
+            'limits': limits,
+            'info': market,
+        };
+    }
+
     async fetchCurrencies (params = {}) {
-        const response = await this.publicGetCurrencies (params);
+        const response = await this.spotPublicGetCurrencies (params);
         //
         //     {
         //       "currency": "OMG",
@@ -411,7 +538,7 @@ module.exports = class kucoin extends Exchange {
     }
 
     async fetchAccounts (params = {}) {
-        const response = await this.privateGetAccounts (params);
+        const response = await this.spotPrivateGetAccounts (params);
         //
         //     {
         //         code: "200000",
@@ -458,7 +585,7 @@ module.exports = class kucoin extends Exchange {
         const request = {
             'currency': currencyId,
         };
-        const response = await this.privateGetWithdrawalsQuotas (this.extend (request, params));
+        const response = await this.spotPrivateGetWithdrawalsQuotas (this.extend (request, params));
         const data = response['data'];
         const withdrawFees = {};
         withdrawFees[code] = this.safeFloat (data, 'withdrawMinFee');
@@ -545,7 +672,7 @@ module.exports = class kucoin extends Exchange {
 
     async fetchTickers (symbols = undefined, params = {}) {
         await this.loadMarkets ();
-        const response = await this.publicGetMarketAllTickers (params);
+        const response = await this.spotPublicGetMarketAllTickers (params);
         //
         //     {
         //         "code": "200000",
@@ -585,7 +712,7 @@ module.exports = class kucoin extends Exchange {
         const request = {
             'symbol': market['id'],
         };
-        const response = await this.publicGetMarketStats (this.extend (request, params));
+        const response = await this.spotPublicGetMarketStats (this.extend (request, params));
         //
         //     {
         //         "code": "200000",
@@ -653,7 +780,7 @@ module.exports = class kucoin extends Exchange {
             request['startAt'] = parseInt (Math.floor (since / 1000));
         }
         request['endAt'] = parseInt (Math.floor (endAt / 1000));
-        const response = await this.publicGetMarketCandles (this.extend (request, params));
+        const response = await this.spotPublicGetMarketCandles (this.extend (request, params));
         //
         //     {
         //         "code":"200000",
@@ -672,7 +799,7 @@ module.exports = class kucoin extends Exchange {
         await this.loadMarkets ();
         const currencyId = this.currencyId (code);
         const request = { 'currency': currencyId };
-        const response = await this.privatePostDepositAddresses (this.extend (request, params));
+        const response = await this.spotPrivatePostDepositAddresses (this.extend (request, params));
         // BCH {"code":"200000","data":{"address":"bitcoincash:qza3m4nj9rx7l9r0cdadfqxts6f92shvhvr5ls4q7z","memo":""}}
         // BTC {"code":"200000","data":{"address":"36SjucKqQpQSvsak9A7h6qzFjrVXpRNZhE","memo":""}}
         const data = this.safeValue (response, 'data', {});
@@ -695,7 +822,7 @@ module.exports = class kucoin extends Exchange {
         await this.loadMarkets ();
         const currencyId = this.currencyId (code);
         const request = { 'currency': currencyId };
-        const response = await this.privateGetDepositAddresses (this.extend (request, params));
+        const response = await this.spotPrivateGetDepositAddresses (this.extend (request, params));
         // BCH {"code":"200000","data":{"address":"bitcoincash:qza3m4nj9rx7l9r0cdadfqxts6f92shvhvr5ls4q7z","memo":""}}
         // BTC {"code":"200000","data":{"address":"36SjucKqQpQSvsak9A7h6qzFjrVXpRNZhE","memo":""}}
         const data = this.safeValue (response, 'data', {});
@@ -732,7 +859,7 @@ module.exports = class kucoin extends Exchange {
         await this.loadMarkets ();
         const marketId = this.marketId (symbol);
         const request = { 'symbol': marketId, 'level': levelLimit };
-        const response = await this.publicGetMarketOrderbookLevelLevel (this.extend (request, params));
+        const response = await this.spotPublicGetMarketOrderbookLevelLevel (this.extend (request, params));
         //
         // 'market/orderbook/level2'
         // 'market/orderbook/level2_20'
@@ -807,7 +934,7 @@ module.exports = class kucoin extends Exchange {
                 request['size'] = this.amountToPrecision (symbol, amount);
             }
         }
-        const response = await this.privatePostOrders (this.extend (request, params));
+        const response = await this.spotPrivatePostOrders (this.extend (request, params));
         //
         //     {
         //         code: '200000',
@@ -847,7 +974,7 @@ module.exports = class kucoin extends Exchange {
 
     async cancelOrder (id, symbol = undefined, params = {}) {
         const request = { 'orderId': id };
-        const response = await this.privateDeleteOrdersOrderId (this.extend (request, params));
+        const response = await this.spotPrivateDeleteOrdersOrderId (this.extend (request, params));
         return response;
     }
 
@@ -867,7 +994,7 @@ module.exports = class kucoin extends Exchange {
         if (limit !== undefined) {
             request['pageSize'] = limit;
         }
-        const response = await this.privateGetOrders (this.extend (request, params));
+        const response = await this.spotPrivateGetOrders (this.extend (request, params));
         //
         //     {
         //         code: '200000',
@@ -939,7 +1066,7 @@ module.exports = class kucoin extends Exchange {
         if (symbol !== undefined) {
             market = this.market (symbol);
         }
-        const response = await this.privateGetOrdersOrderId (this.extend (request, params));
+        const response = await this.spotPrivateGetOrdersOrderId (this.extend (request, params));
         const responseData = this.safeValue (response, 'data');
         return this.parseOrder (responseData, market);
     }
@@ -1137,7 +1264,7 @@ module.exports = class kucoin extends Exchange {
         if (limit !== undefined) {
             request['pageSize'] = limit;
         }
-        const response = await this.publicGetMarketHistories (this.extend (request, params));
+        const response = await this.spotPublicGetMarketHistories (this.extend (request, params));
         //
         //     {
         //         "code": "200000",
@@ -1308,7 +1435,7 @@ module.exports = class kucoin extends Exchange {
         if (tag !== undefined) {
             request['memo'] = tag;
         }
-        const response = await this.privatePostWithdrawals (this.extend (request, params));
+        const response = await this.spotPrivatePostWithdrawals (this.extend (request, params));
         //
         // https://github.com/ccxt/ccxt/issues/5558
         //
@@ -1575,7 +1702,7 @@ module.exports = class kucoin extends Exchange {
             const options = this.safeValue (this.options, 'fetchBalance', {});
             type = this.safeString (options, 'type', 'trade');
         }
-        const response = await this.privateGetAccounts (this.extend (request, params));
+        const response = await this.spotPrivateGetAccounts (this.extend (request, params));
         //
         //     {
         //         "code":"200000",
@@ -1630,7 +1757,7 @@ module.exports = class kucoin extends Exchange {
         if (since !== undefined) {
             request['startAt'] = Math.floor (since / 1000);
         }
-        const response = await this.privateGetAccountsAccountIdLedgers (this.extend (request, params));
+        const response = await this.spotPrivateGetAccountsAccountIdLedgers (this.extend (request, params));
         //
         //     {
         //         code: '200000',
@@ -1748,8 +1875,10 @@ module.exports = class kucoin extends Exchange {
         // the v2 URL is https://openapi-v2.kucoin.com/api/v1/endpoint
         //                                †                 ↑
         //
+        const type = this.safeValue (api, 0);
+        const access = this.safeValue (api, 1);
         const versions = this.safeValue (this.options, 'versions', {});
-        const apiVersions = this.safeValue (versions, api);
+        const apiVersions = this.safeValue (versions, access);
         const methodVersions = this.safeValue (apiVersions, method, {});
         const defaultVersion = this.safeString (methodVersions, path, this.options['version']);
         const version = this.safeString (params, 'version', defaultVersion);
@@ -1767,8 +1896,8 @@ module.exports = class kucoin extends Exchange {
                 endpoint += '?' + this.urlencode (query);
             }
         }
-        const url = this.urls['api'][api] + endpoint;
-        if (api === 'private') {
+        const url = this.urls['api'][type] + endpoint;
+        if (access === 'private') {
             this.checkRequiredCredentials ();
             const timestamp = this.nonce ().toString ();
             headers = this.extend ({
@@ -1790,6 +1919,169 @@ module.exports = class kucoin extends Exchange {
             }
         }
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
+    }
+
+    async fetchPositions (symbols = undefined, since = undefined, limit = undefined, params = {}) {
+        await this.loadMarkets ();
+        // {
+        //   "code": "200000",
+        //   "data": [
+        //     {
+        //       "id": "5fd4a9eeb94e1f0006605671",
+        //       "symbol": "XBTUSDTM",
+        //       "autoDeposit": false,
+        //       "maintMarginReq": 0.005,
+        //       "riskLimit": 2000000,
+        //       "realLeverage": 19.81,
+        //       "crossMode": false,
+        //       "delevPercentage": 0.22,
+        //       "openingTimestamp": 1607772654848,
+        //       "currentTimestamp": 1607772663225,
+        //       "currentQty": 1,
+        //       "currentCost": 18.426,
+        //       "currentComm": 0.0110556,
+        //       "unrealisedCost": 18.426,
+        //       "realisedGrossCost": 0,
+        //       "realisedCost": 0.0110556,
+        //       "isOpen": true,
+        //       "markPrice": 18434.76,
+        //       "markValue": 18.43476,
+        //       "posCost": 18.426,
+        //       "posCross": 0,
+        //       "posInit": 0.9213,
+        //       "posComm": 0.01160838,
+        //       "posLoss": 0,
+        //       "posMargin": 0.93290838,
+        //       "posMaint": 0.10475181,
+        //       "maintMargin": 0.94166838,
+        //       "realisedGrossPnl": 0,
+        //       "realisedPnl": -0.0110556,
+        //       "unrealisedPnl": 0.00876,
+        //       "unrealisedPnlPcnt": 0.0005,
+        //       "unrealisedRoePcnt": 0.0095,
+        //       "avgEntryPrice": 18426,
+        //       "liquidationPrice": 17598,
+        //       "bankruptPrice": 17504,
+        //       "settleCurrency": "USDT",
+        //       "isInverse": false
+        //     },
+        //     ...
+        //   ]
+        // }
+        const response = await this.futuresPrivateGetPositions (params);
+        const positions = this.safeValue (response, 'data', []);
+        return this.parsePositions (positions, symbols, since, limit);
+    }
+
+    parsePosition (position) {
+        // best position API so far ;)
+        // A++ from CCXT
+        // linear
+        // { id: '5fd4a9eeb94e1f0006605671',
+        //   symbol: 'XBTUSDTM',
+        //   autoDeposit: false,
+        //   maintMarginReq: 0.005,
+        //   riskLimit: 2000000,
+        //   realLeverage: 18.93,
+        //   crossMode: false,
+        //   delevPercentage: 0.28,
+        //   openingTimestamp: 1607772654848,
+        //   currentTimestamp: 1607773864449,
+        //   currentQty: 1,
+        //   currentCost: 18.426,
+        //   currentComm: 0.0110556,
+        //   unrealisedCost: 18.426,
+        //   realisedGrossCost: 0,
+        //   realisedCost: 0.0110556,
+        //   isOpen: true,
+        //   markPrice: 18478.14,
+        //   markValue: 18.47814,
+        //   posCost: 18.426,
+        //   posCross: 0,
+        //   posInit: 0.9213,
+        //   posComm: 0.01160838,
+        //   posLoss: 0,
+        //   posMargin: 0.93290838,
+        //   posMaint: 0.10475181,
+        //   maintMargin: 0.98504838,
+        //   realisedGrossPnl: 0,
+        //   realisedPnl: -0.0110556,
+        //   unrealisedPnl: 0.05214,
+        //   unrealisedPnlPcnt: 0.0028,
+        //   unrealisedRoePcnt: 0.0566,
+        //   avgEntryPrice: 18426,
+        //   liquidationPrice: 17598,
+        //   bankruptPrice: 17504,
+        //   settleCurrency: 'USDT',
+        //   isInverse: false }
+        const marketId = this.safeString (position, 'symbol');
+        const market = this.safeMarket (marketId);
+        const id = this.safeString (position, 'id');
+        const symbol = market['symbol'];
+        const expiry = market['expiry'];
+        const settlementCurrencyId = this.safeString (position, 'settleCurrency');
+        const settlementCurrency = this.safeCurrencyCode (settlementCurrencyId);
+        const markPrice = this.safeFloat (position, 'markPrice');
+        const liquidationPrice = this.safeFloat (position, 'liquidationPrice');
+        const price = this.safeFloat (position, 'avgEntryPrice');
+        const rawContracts = this.safeInteger (position, 'currentQty');
+        let contracts = undefined;
+        const contractSize = market['contractSize'];
+        if ((contractSize !== undefined) && (rawContracts !== undefined)) {
+            contracts = Math.abs (rawContracts * contractSize);
+        }
+        const leverage = this.safeFloat (position, 'realLeverage');
+        const realizedPnl = this.safeFloat (position, 'realisedPnl');
+        const unrealizedPnl = this.safeFloat (position, 'unrealisedPnl');
+        let pnl = undefined;
+        if ((realizedPnl !== undefined) && (unrealizedPnl !== undefined)) {
+            pnl = this.sum (realizedPnl, unrealizedPnl);
+        }
+        const crossMode = this.safeValue (position, 'crossMode');
+        const isolated = (crossMode === undefined) ? undefined : !crossMode;
+        const isOpen = this.safeValue (position, 'isOpen');
+        const status = isOpen ? 'open' : 'closed';
+        let notional = this.safeFloat (position, 'currentCost');
+        let side = undefined;
+        if (notional < 0) {
+            side = 'short';
+            notional = -notional;
+        } else {
+            side = 'long';
+        }
+        const collateral = this.safeFloat (position, 'maintMargin');
+        const initialMargin = this.safeFloat (position, 'posMargin');
+        const initialMarginPercentage = initialMargin / notional;
+        const maintenanceMargin = this.safeFloat (position, 'posMaint');
+        const maintenanceMarginPercentage = this.safeFloat (position, 'maintMarginReq');  // precision loss
+        const timestamp = this.safeInteger (position, 'currentTimestamp');
+        return {
+            'info': position,
+            'id': id,
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'isolated': isolated,
+            'hedged': false,
+            'side': side,
+            'contracts': contracts,
+            'symbol': symbol,
+            'collateral': collateral,
+            'realizedPnl': realizedPnl,
+            'unrealizedPnl': unrealizedPnl,
+            'pnl': pnl,
+            'maintenanceMarginPercentage': maintenanceMarginPercentage,
+            'maintenanceMargin': maintenanceMargin,
+            'initialMarginPercentage': initialMarginPercentage,
+            'initialMargin': initialMargin,
+            'leverage': leverage,
+            'markPrice': markPrice,
+            'notional': notional,
+            'expiry': expiry,
+            'price': price,
+            'settlementCurrency': settlementCurrency,
+            'liquidationPrice': liquidationPrice,
+            'status': status,
+        };
     }
 
     handleErrors (code, reason, url, method, headers, body, response, requestHeaders, requestBody) {

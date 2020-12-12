@@ -1589,7 +1589,7 @@ module.exports = class ftx extends Exchange {
         const price = this.safeFloat (position, 'recentAverageOpenPrice');
         let markPrice = undefined;
         let collateral = undefined;
-        let notational = undefined;
+        let notional = undefined;
         let maintenanceMargin = undefined;
         let initialMargin = undefined;
         let leverage = undefined;
@@ -1603,10 +1603,10 @@ module.exports = class ftx extends Exchange {
                 } else {
                     marginFraction = this.sum (marginDifference, maintenanceMarginPercentage, -1);
                 }
-                notational = contracts * markPrice;
-                collateral = marginFraction * notational;
-                initialMargin = initialMarginPercentage * notational;
-                maintenanceMargin = maintenanceMarginPercentage * notational;
+                notional = contracts * markPrice;
+                collateral = marginFraction * notional;
+                initialMargin = initialMarginPercentage * notional;
+                maintenanceMargin = maintenanceMarginPercentage * notional;
                 leverage = 1 / marginFraction;
             }
         }
@@ -1631,7 +1631,7 @@ module.exports = class ftx extends Exchange {
             'initialMargin': initialMargin,
             'leverage': leverage,
             'markPrice': markPrice,
-            'notational': notational,
+            'notional': notional,
             'expiry': expiry,
             'price': price,
             'settlementCurrency': quote,

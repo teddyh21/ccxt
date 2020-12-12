@@ -191,16 +191,14 @@ The unified ccxt API is a subset of methods common among the exchanges. It curre
 - [`fetchMarkets ([params])`](#market-structure): Fetches a list of all available markets from an exchange and returns an array of markets (objects with properties such as `symbol`, `base`, `quote` etc.). Some exchanges do not have means for obtaining a list of markets via their online API. For those, the list of markets is hardcoded.
 - [`fetchCurrencies ([params])`](#currency-structure): Fetches  all available currencies an exchange and returns an associative dictionary of currencies (objects with properties such as `code`, `name`, etc.). Some exchanges do not have means for obtaining currencies via their online API. For those, the currencies will be extracted from market pairs or hardcoded. [structure]- `loadMarkets ([reload])`: Returns the list of markets as an object indexed by symbol and caches it with the exchange instance. Returns cached markets if loaded already, unless the `reload = true` flag is forced.
 - [`fetchOrderBook (symbol[, limit = undefined[, params = {}]])`](#order-book-structure): Fetch L2/L3 order book for a particular market trading symbol.
-- `fetchStatus ([, params = {}])`: Returns information regarding the exchange status from either the info hardcoded in the exchange instance or the API, if available.
-- `fetchL2OrderBook (symbol[, limit = undefined[, params]])`: Level 2 (price-aggregated) order book for a particular symbol.
-- [`fetchTicker (symbol)`](#ticker-structure): Fetch latest ticker data by trading symbol.
-- [`fetchBalance ()`](#balance-structure): Fetch Balance.
-- `createOrder (symbol, type, side, amount[, price[, params]])`
-- `createLimitBuyOrder (symbol, amount, price[, params])`
-- `createLimitSellOrder (symbol, amount, price[, params])`
-- `createMarketBuyOrder (symbol, amount[, params])`
-- `createMarketSellOrder (symbol, amount[, params])` 
-- `cancelOrder (id[, symbol[, params]])` 
+- [`fetchTicker (symbol)`](#ticker-structure)
+- [`fetchBalance ()`](#balance-structure)
+- [`createOrder (symbol, type, side, amount[, price[, params]])`](#order-structure)
+- [`createLimitBuyOrder (symbol, amount, price[, params])`](#order-structure)
+- [`createLimitSellOrder (symbol, amount, price[, params])`](#order-structure)
+- [`createMarketBuyOrder (symbol, amount[, params])`](#order-structure)
+- [`createMarketSellOrder (symbol, amount[, params])`](#order-structure)
+- [`cancelOrder (id[, symbol[, params]])`](#order-structure)
 - [`fetchOrder (id[, symbol[, params]])`](#order-structure)
 - [`fetchOrders ([symbol[, since[, limit[, params]]]])`](#order-structure)
 - [`fetchOpenOrders ([symbol[, since, limit, params]]]])`](#order-structure)
@@ -210,7 +208,7 @@ The unified ccxt API is a subset of methods common among the exchanges. It curre
 - [`fetchTransactions ([symbol[, since[, limit[, params]]]])`](#transaction-structure)
 - [`fetchWithdrawals ([symbol[, since[, limit[, params]]]])`](#transaction-structure)
 - [`fetchDepositions ([symbol[, since[, limit[, params]]]])`](#transaction-structure)
-- [`fetchPositions` ([symbols[, since[, limit[, params]]]])](#position-structure)
+- [`fetchPositions` ([symbols[, since[, limit[, params]]]])](#position-structure) **RECENTLY UNIFIED**
 - ...
 
 ### Overriding Unified API Params
@@ -3232,7 +3230,7 @@ if ($exchange->has['fetchTransactions']) {
 
 ## Positions
 
-```
+```diff
 - this part of the unified API is currenty a work in progress
 - there may be some issues and missing implementations here and there
 - contributions, pull requests and feedback appreciated
@@ -3279,7 +3277,9 @@ When you go long on a position you are betting that the price will be higher in 
 
 As the price of the underlying index changes so will the `unrealisedPnl` and as a consequence the amount of `collateral` you have left in the position (since you can only close it at market price or worse). At some price you will have zero collateral left, this is called the "bust" or "zero" price. Beyond this point, if the price goes in the opposite direction far enough, the `collateral` of the position will drop below the `maintenanceMargin`. The `maintenanceMargin` acts as a safety buffer between your position and negative collateral, a scenario where the exchange incurs losses on your behalf. To protect itself the exchange will swiftly liquidate your position if and when this happens. Even if the price returns back above the `liquidationPrice` you will not get your money back since the exchange sold all the `contracts` you bought at market. In other words the `maintenanceMargin` is a hidden fee to borrow money.
 
-There are inverse contracts and linear contracts. The `notional` and `collateral` in inverse contracts is quoted as if they were traded `USD/BTC`, however the price is still quoted terms of `BTC/USD`. An inverse contract will allow you to go long or short on `BTC/USD` by putting up `BTC` as collateral. The API for inverse contracts is exactly the same as linear contracts.
+It is recommended to use the `maintenanceMargin` and `initialMargin` instead of the `maintenanceMarginPercentage` and `initialMarginPercentage` since these tend to be more accurate. The `maintenanceMargin` might be calculated from other factors outside of the `maintenanceMarginPercentage` including the funding rate and taker fees, for example on [kucoin](https://futures.kucoin.com/contract/detail).
+
+An inverse contract will allow you to go long or short on `BTC/USD` by putting up `BTC` as collateral. Our API for inverse contracts is the same as for linear contracts. The amounts in an inverse contracts are quoted as if they were traded `USD/BTC`, however the price is still quoted terms of `BTC/USD`.  The formula for the profit and loss of a inverse contract is `(1/markPrice - 1/price) * contracts`. The profit and loss and `collateral` will now be quoted in `BTC`, and the number of `contracts` are quoted in `USD`.
 
 *Disclaimer:*
 

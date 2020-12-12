@@ -2369,7 +2369,7 @@ module.exports = class bybit extends Exchange {
         const datetime = this.safeString (data, 'created_at');
         const positionMargin = this.safeFloat (data, 'position_margin');
         const leverage = this.safeFloat2 (data, 'effective_leverage', 'leverage'); // precision loss
-        const notational = this.safeFloat (data, 'position_value');
+        const notional = this.safeFloat (data, 'position_value');
         const contracts = this.safeFloat (data, 'size');
         const price = this.safeFloat (data, 'entry_price');
         const liquidationPrice = this.safeFloat (data, 'liq_price');
@@ -2391,7 +2391,7 @@ module.exports = class bybit extends Exchange {
         if (quote === 'USDT') {
             hedged = true;
             settlementCurrency = quote;
-            initialMargin = contracts * price * positionMargin / notational;
+            initialMargin = contracts * price * positionMargin / notional;
             maxLoss = Math.abs (price - liquidationPrice) * contracts;
             // the docs are wrong about it being the last price
             // it is actually the mark price
@@ -2414,9 +2414,9 @@ module.exports = class bybit extends Exchange {
             }
         }
         const collateral = initialMargin + unrealizedPnl;
-        const initialMarginPercentage = initialMargin / notational;
+        const initialMarginPercentage = initialMargin / notional;
         const maintenanceMargin = initialMargin - maxLoss;
-        const maintenanceMarginPercentage = maintenanceMargin / notational;
+        const maintenanceMarginPercentage = maintenanceMargin / notional;
         const status = (contracts === 0) ? 'closed' : 'open';
         return {
             'info': position,
@@ -2438,7 +2438,7 @@ module.exports = class bybit extends Exchange {
             'initialMargin': initialMargin,
             'leverage': leverage,
             'markPrice': markPrice,
-            'notational': notational,
+            'notional': notional,
             'expiry': undefined,
             'price': price,
             'settlementCurrency': settlementCurrency,

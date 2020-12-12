@@ -37,6 +37,7 @@ module.exports = class phemex extends Exchange {
                 'fetchTicker': true,
                 'fetchTrades': true,
                 'fetchWithdrawals': true,
+                'fetchPositions': true,
             },
             'urls': {
                 'logo': 'https://user-images.githubusercontent.com/1294454/85225056-221eb600-b3d7-11ea-930d-564d2690e3f6.jpg',
@@ -2510,7 +2511,7 @@ module.exports = class phemex extends Exchange {
         //   cumRealisedPnl: null }
         const valueEv = this.safeInteger (position, 'valueEv');
         const avgEntryPriceEp = this.safeInteger (position, 'avgEntryPriceEp');
-        const notational = this.safeFloat (position, 'value', 0);
+        const notional = this.safeFloat (position, 'value', 0);
         const realizedPnl = this.safeFloat (position, 'cumRealisedPnl');
         const markPrice = this.safeFloat (position, 'markPrice');
         const price = this.safeFloat (position, 'avgEntryPrice');
@@ -2556,12 +2557,12 @@ module.exports = class phemex extends Exchange {
         }
         const leverage = this.safeFloat (position, 'leverage');
         const initialMarginPercentage = this.safeFloat (position, 'initMarginReq');
-        const maintenanceMarginPercentage = this.safeFloat (position, 'maintMarginReq');
+        const maintenanceMarginPercentage = this.safeFloat (position, 'maintMarginReq');  // precisionLoss
         const maintenanceMargin = initialMargin - maxLoss;
         const collateral = initialMargin + unrealizedPnl;
         const status = (contracts === 0) ? 'closed' : 'open';
-        const crossMargin = this.safeValue (position, 'crossMargin', false);
-        const isolated = !crossMargin;
+        const crossMargin = this.safeValue (position, 'crossMargin');
+        const isolated = (crossMargin === undefined) ? undefined : !crossMargin;
         return {
             'info': position,
             'id': undefined,
@@ -2582,7 +2583,7 @@ module.exports = class phemex extends Exchange {
             'initialMargin': initialMargin,
             'leverage': leverage,
             'markPrice': markPrice,
-            'notational': notational,
+            'notional': notional,
             'expiry': undefined,
             'price': price,
             'settlementCurrency': settlementCurrency,
