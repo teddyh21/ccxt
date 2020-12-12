@@ -50,6 +50,8 @@ Full public and private HTTP REST APIs for all exchanges are implemented. WebSoc
 - [API Methods / Endpoints](#api-methods--endpoints)
 - [Market Data](#market-data)
 - [Trading](#trading)
+- [Trades](#trades)
+
 
 # Exchanges
 
@@ -1291,6 +1293,7 @@ The unified ccxt API is a subset of methods common among the exchanges. It curre
 - `fetchOpenOrders ([symbol[, since, limit, params]]]])`
 - `fetchClosedOrders ([symbol[, since[, limit[, params]]]])`
 - `fetchMyTrades ([symbol[, since[, limit[, params]]]])`
+- `fetchPositions` ([symbols[, since[, limit[, params]]]]) [structure](https://github.com/ccxt/ccxt/wiki/Manual#position-structure)
 - ...
 
 ### Overriding Unified API Params
@@ -1960,7 +1963,6 @@ You can call the unified `fetchOHLCV` / `fetch_ohlcv` method to get the list of 
 let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
 if (exchange.has.fetchOHLCV) {
     for (symbol in exchange.markets) {
-        await sleep (exchange.rateLimit) // milliseconds
         console.log (await exchange.fetchOHLCV (symbol, '1m')) // one minute
     }
 }
@@ -1971,7 +1973,6 @@ if (exchange.has.fetchOHLCV) {
 import time
 if exchange.has['fetchOHLCV']:
     for symbol in exchange.markets:
-        time.sleep (exchange.rateLimit / 1000) # time.sleep wants seconds
         print (symbol, exchange.fetch_ohlcv (symbol, '1d')) # one day
 ```
 
@@ -1979,7 +1980,6 @@ if exchange.has['fetchOHLCV']:
 // PHP
 if ($exchange->has['fetchOHLCV']) {
     foreach ($exchange->markets as $symbol => $market) {
-        usleep ($exchange->rateLimit * 1000); // usleep wants microseconds
         var_dump ($exchange->fetch_ohlcv ($symbol, '1M')); // one month
     }
 }
@@ -2021,11 +2021,11 @@ The list of candles is returned sorted in ascending (historical/chronological) o
 
 ### OHLCV Emulation
 
-Some exchanges don't offer any OHLCV method, and for those, the ccxt library will emulate OHLCV candles from [Public Trades](https://github.com/ccxt/ccxt/wiki/Manual#trades-executions-transactions). In that case you will see `exchange.has['fetchOHLCV'] = 'emulated'`. However, because the trade history is usually very limited, the emulated fetchOHLCV methods cover most recent info only and should only be used as a fallback, when no other option is available.
+Some exchanges don't offer any OHLCV method, and for those, the ccxt library will emulate OHLCV candles from [Public Trades](https://github.com/ccxt/ccxt/wiki/Manual#public-trades). In that case you will see `exchange.has['fetchOHLCV'] = 'emulated'`. However, because the trade history is usually very limited, the emulated fetchOHLCV methods cover most recent info only and should only be used as a fallback, when no other option is available.
 
 **WARNING: the fetchOHLCV emulation is experimental!**
 
-## Trades, Executions, Transactions
+## Public Trades
 
 ```diff
 - this is under heavy development right now, contributions appreciated
@@ -2042,9 +2042,7 @@ For example, if you want to print recent trades for all symbols one by one seque
 ```JavaScript
 // JavaScript
 if (exchange.has['fetchTrades']) {
-    let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
     for (symbol in exchange.markets) {
-        await sleep (exchange.rateLimit) // milliseconds
         console.log (await exchange.fetchTrades (symbol))
     }
 }
@@ -2055,7 +2053,6 @@ if (exchange.has['fetchTrades']) {
 import time
 if exchange.has['fetchTrades']:
     for symbol in exchange.markets:  # ensure you have called loadMarkets() or load_markets() method.
-        time.sleep (exchange.rateLimit / 1000)  # time.sleep wants seconds
         print (symbol, exchange.fetch_trades (symbol))
 ```
 
@@ -2063,7 +2060,6 @@ if exchange.has['fetchTrades']:
 // PHP
 if ($exchange->has['fetchTrades']) {
     foreach ($exchange->markets as $symbol => $market) {
-        usleep ($exchange->rateLimit * 1000); // usleep wants microseconds
         var_dump ($exchange->fetch_trades ($symbol));
     }
 }
@@ -2084,6 +2080,8 @@ The fetchTrades method shown above returns an ordered list of trades (a flat arr
         'side':      'buy',                     // direction of the trade, 'buy' or 'sell'
         'price':      0.06917684,               // float price in quote currency
         'amount':     1.5,                      // amount of base currency
+        'cost':       0.10376526,               // the price times the amount of the trade
+        'takerOrMaker': 'taker',                // whether the trade executed as a taker or maker
     },
     ...
 ]
@@ -2105,8 +2103,188 @@ On the other hand, **some exchanges don't support pagination for public trades a
 
 The `fetchTrades ()` / `fetch_trades()` method also accepts an optional `params` (assoc-key array/dict, empty by default) as its fourth argument. You can use it to pass extra params to method calls or to override a particular default value (where supported by the exchange). See the API docs for your exchange for more details.
 
+
+## Personal Trades
+
 ```
-UNDER CONSTRUCTION
+- this part of the unified API is currenty a work in progress
+- there may be some issues and missing implementations here and there
+- contributions, pull requests and feedback appreciated
+```
+
+### How Orders Are Related To Trades
+
+A trade is also often called `a fill`. Each trade is a result of order execution. Note, that orders and trades have a one-to-many relationship: an execution of one order may result in several trades. However, when one order matches another opposing order, the pair of two matching orders yields one trade. Thus, when an order matches multiple opposing orders, this yields multiple trades, one trade per each pair of matched orders.
+
+To put it shortly, an order can contain *one or more* trades. Or, in other words, an order can be *filled* with one or more trades.
+
+For example, an orderbook can have the following orders (whatever trading symbol or pair it is):
+
+```
+    | price  | amount
+----|----------------
+  a |  1.200 | 200
+  s |  1.100 | 300
+  k |  0.900 | 100
+----|----------------
+  b |  0.800 | 100
+  i |  0.700 | 200
+  d |  0.500 | 100
+```
+
+All specific numbers above aren't real, this is just to illustrate the way orders and trades are related in general.
+
+A seller decides to place a sell limit order on the ask side for a price of 0.700 and an amount of 150.
+
+```
+    | price  | amount
+----|----------------  ↓
+  a |  1.200 | 200     ↓
+  s |  1.100 | 300     ↓
+  k |  0.900 | 100     ↓
+----|----------------  ↓
+  b |  0.800 | 100     ↓ sell 150 for 0.700
+  i |  0.700 | 200     --------------------
+  d |  0.500 | 100
+```
+
+As the price and amount of the incoming sell (ask) order cover more than one bid order (orders `b` and `i`), the following sequence of events usually happens within an exchange engine very quickly, but not immediately:
+
+1. Order `b` is matched against the incoming sell because their prices intersect. Their volumes *"mutually annihilate"* each other, so, the bidder gets 100 for a price of 0.800. The seller (asker) will have his sell order partially filled by bid volume 100 for a price of 0.800. Note that for the filled part of the order the seller gets a better price than he asked for initially. He asked for 0.7 at least but got 0.8 instead which is even better for the seller. Most conventional exchanges fill orders for the best price available.
+
+2. A trade is generated for the order `b` against the incoming sell order. That trade *"fills"* the entire order `b` and most of the sell order. One trade is generated per each pair of matched orders, whether the amount was filled completely or partially. In this example the seller amount (100) fills order `b` completely (closes the order `b`) and also fills the selling order partially (leaves it open in the orderbook).
+
+3. Order `b` now has a status of `closed` and a filled volume of 100. It contains one trade against the selling order. The selling order has an `open` status and a filled volume of 100. It contains one trade against order `b`. Thus each order has just one fill-trade so far.
+
+4. The incoming sell order has a filled amount of 100 and has yet to fill the remaining amount of 50 from its initial amount of 150 in total.
+
+The intermediate state of the orderbook is now (order `b` is `closed` and is not in the orderbook anymore):
+
+```
+    | price  | amount
+----|----------------  ↓
+  a |  1.200 | 200     ↓
+  s |  1.100 | 300     ↓
+  k |  0.900 | 100     ↓
+----|----------------  ↓ sell remaining 50 for 0.700
+  i |  0.700 | 200     -----------------------------
+  d |  0.500 | 100
+```
+
+5. Order `i` is matched against the remaining part of incoming sell, because their prices intersect. The amount of buying order `i` which is 200 completely annihilates the remaining sell amount of 50. The order `i` is filled partially by 50, but the rest of its volume, namely the remaining amount of 150 will stay in the orderbook. The selling order, however, is fulfilled completely by this second match.
+
+6. A trade is generated for the order `i` against the incoming sell order. That trade partially fills order `i`. And completes the filling of the sell order. Again, this is just one trade for a pair of matched orders.
+
+7. Order `i` now has a status of `open`, a filled amount of 50, and a remaining amount of 150. It contains one filling trade against the selling order. The selling order has a `closed` status now and it has completely filled its total initial amount of 150. However, it contains two trades, the first against order `b` and the second against order `i`. Thus each order can have one or more filling trades, depending on how their volumes were matched by the exchange engine.
+
+After the above sequence takes place, the updated orderbook will look like this.
+
+```
+    | price  | amount
+----|----------------
+  a |  1.200 | 200
+  s |  1.100 | 300
+  k |  0.900 | 100
+----|----------------
+  i |  0.700 | 150
+  d |  0.500 | 100
+```
+
+Notice that the order `b` has disappeared, the selling order also isn't there. All closed and fully-filled orders disappear from the orderbook. The order `i` which was filled partially and still has a remaining volume and an `open` status, is still there.
+
+
+### Personal Trades
+
+Most of unified methods will return either a single object or a plain array (a list) of objects (trades). However, very few exchanges (if any at all) will return all trades at once. Most often their APIs `limit` output to a certain number of most recent objects. **YOU CANNOT GET ALL OBJECTS SINCE THE BEGINNING OF TIME TO THE PRESENT MOMENT IN JUST ONE CALL**. Practically, very few exchanges will tolerate or allow that.
+
+As with all other unified methods for fetching historical data, the `fetchMyTrades` method accepts a `since` argument for [date-based pagination](#date-based-pagination). Just like with all other unified methods throughout the CCXT library, the `since` argument for `fetchMyTrades` must be an **integer timestamp in milliseconds**.
+
+To fetch historical trades, the user will need to traverse the data in portions or "pages" of objects. Pagination often implies *"fetching portions of data one by one"* in a loop.
+
+In most cases users are **required to use at least some type of [pagination](#pagination)** in order to get the expected results consistently.
+
+```JavaScript
+// JavaScript
+// fetchMyTrades (symbol = undefined, since = undefined, limit = undefined, params = {})
+
+if (exchange.has['fetchMyTrades']) {
+    const trades = await exchange.fetchMyTrades (symbol, since, limit, params)
+}
+```
+
+```Python
+# Python
+# fetch_my_trades(symbol=None, since=None, limit=None, params={})
+
+if exchange.has['fetchMyTrades']:
+    exchange.fetch_my_trades(symbol=None, since=None, limit=None, params={})
+```
+
+```PHP
+// PHP
+// fetch_my_trades($symbol = null, $since = null, $limit = null, $params = array())
+
+if ($exchange->has['fetchMyTrades']) {
+    $trades = $exchange->fetch_my_trades($symbol, $since, $limit, $params);
+}
+```
+
+Returns ordered array `[]` of trades (most recent trade last).
+
+#### Trade structure
+
+```JavaScript
+{
+    'info':         { ... },                    // the original decoded JSON as is
+    'id':           '12345-67890:09876/54321',  // string trade id
+    'timestamp':    1502962946216,              // Unix timestamp in milliseconds
+    'datetime':     '2017-08-17 12:42:48.000',  // ISO8601 datetime with milliseconds
+    'symbol':       'ETH/BTC',                  // symbol
+    'order':        '12345-67890:09876/54321',  // string order id or undefined/None/null
+    'type':         'limit',                    // order type, 'market', 'limit' or undefined/None/null
+    'side':         'buy',                      // direction of the trade, 'buy' or 'sell'
+    'takerOrMaker': 'taker',                    // string, 'taker' or 'maker'
+    'price':        0.06917684,                 // float price in quote currency
+    'amount':       1.5,                        // amount of base currency
+    'cost':         0.10376526,                 // total cost (including fees), `price * amount`
+    'fee':          {                           // provided by exchange or calculated by ccxt
+        'cost':  0.0015,                        // float
+        'currency': 'ETH',                      // usually base currency for buys, quote currency for sells
+        'rate': 0.002,                          // the fee rate (if available)
+    },
+}
+```
+
+- The work on `'fee'` info is still in progress, fee info may be missing partially or entirely, depending on the exchange capabilities.
+- The `fee` currency may be different from both traded currencies (for example, an ETH/BTC order with fees in USD).
+- The `cost` of the trade means `amount * price`. It is the total *quote* volume of the trade (whereas `amount` is the *base* volume). The cost field itself is there mostly for convenience and can be deduced from other fields.
+
+### Trades By Order Id
+
+```JavaScript
+// JavaScript
+// fetchOrderTrades (id, symbol = undefined, since = undefined, limit = undefined, params = {})
+
+if (exchange.has['fetchOrderTrades']) {
+    const trades = await exchange.fetchOrderTrades (orderId, symbol, since, limit, params)
+}
+```
+
+```Python
+# Python
+# fetch_order_trades(id, symbol=None, since=None, limit=None, params={})
+
+if exchange.has['fetchOrderTrades']:
+    exchange.fetch_order_trades(order_id, symbol=None, since=None, limit=None, params={})
+```
+
+```PHP
+// PHP
+// fetch_order_trades ($id, $symbol = null, $since = null, $limit = null, $params = array())
+
+if ($exchange->has['fetchOrderTrades']) {
+    $trades = $exchange->fetch_order_trades($order_id, $symbol, $since, $limit, $params);
+}
 ```
 
 # Trading
@@ -2837,189 +3015,6 @@ As such, `cancelOrder()` can throw an `OrderNotFound` exception in these cases:
 - canceling an already-closed order
 - canceling an already-canceled order
 
-## Personal Trades
-
-```
-- this part of the unified API is currenty a work in progress
-- there may be some issues and missing implementations here and there
-- contributions, pull requests and feedback appreciated
-```
-
-### How Orders Are Related To Trades
-
-A trade is also often called `a fill`. Each trade is a result of order execution. Note, that orders and trades have a one-to-many relationship: an execution of one order may result in several trades. However, when one order matches another opposing order, the pair of two matching orders yields one trade. Thus, when an order matches multiple opposing orders, this yields multiple trades, one trade per each pair of matched orders.
-
-To put it shortly, an order can contain *one or more* trades. Or, in other words, an order can be *filled* with one or more trades.
-
-For example, an orderbook can have the following orders (whatever trading symbol or pair it is):
-
-```
-    | price  | amount
-----|----------------
-  a |  1.200 | 200
-  s |  1.100 | 300
-  k |  0.900 | 100
-----|----------------
-  b |  0.800 | 100
-  i |  0.700 | 200
-  d |  0.500 | 100
-```
-
-All specific numbers above aren't real, this is just to illustrate the way orders and trades are related in general.
-
-A seller decides to place a sell limit order on the ask side for a price of 0.700 and an amount of 150.
-
-```
-    | price  | amount
-----|----------------  ↓
-  a |  1.200 | 200     ↓
-  s |  1.100 | 300     ↓
-  k |  0.900 | 100     ↓
-----|----------------  ↓
-  b |  0.800 | 100     ↓ sell 150 for 0.700
-  i |  0.700 | 200     --------------------
-  d |  0.500 | 100
-```
-
-As the price and amount of the incoming sell (ask) order cover more than one bid order (orders `b` and `i`), the following sequence of events usually happens within an exchange engine very quickly, but not immediately:
-
-1. Order `b` is matched against the incoming sell because their prices intersect. Their volumes *"mutually annihilate"* each other, so, the bidder gets 100 for a price of 0.800. The seller (asker) will have his sell order partially filled by bid volume 100 for a price of 0.800. Note that for the filled part of the order the seller gets a better price than he asked for initially. He asked for 0.7 at least but got 0.8 instead which is even better for the seller. Most conventional exchanges fill orders for the best price available.
-
-2. A trade is generated for the order `b` against the incoming sell order. That trade *"fills"* the entire order `b` and most of the sell order. One trade is generated per each pair of matched orders, whether the amount was filled completely or partially. In this example the seller amount (100) fills order `b` completely (closes the order `b`) and also fills the selling order partially (leaves it open in the orderbook).
-
-3. Order `b` now has a status of `closed` and a filled volume of 100. It contains one trade against the selling order. The selling order has an `open` status and a filled volume of 100. It contains one trade against order `b`. Thus each order has just one fill-trade so far.
-
-4. The incoming sell order has a filled amount of 100 and has yet to fill the remaining amount of 50 from its initial amount of 150 in total.
-
-The intermediate state of the orderbook is now (order `b` is `closed` and is not in the orderbook anymore):
-
-```
-    | price  | amount
-----|----------------  ↓
-  a |  1.200 | 200     ↓
-  s |  1.100 | 300     ↓
-  k |  0.900 | 100     ↓
-----|----------------  ↓ sell remaining 50 for 0.700
-  i |  0.700 | 200     -----------------------------
-  d |  0.500 | 100
-```
-
-5. Order `i` is matched against the remaining part of incoming sell, because their prices intersect. The amount of buying order `i` which is 200 completely annihilates the remaining sell amount of 50. The order `i` is filled partially by 50, but the rest of its volume, namely the remaining amount of 150 will stay in the orderbook. The selling order, however, is fulfilled completely by this second match.
-
-6. A trade is generated for the order `i` against the incoming sell order. That trade partially fills order `i`. And completes the filling of the sell order. Again, this is just one trade for a pair of matched orders.
-
-7. Order `i` now has a status of `open`, a filled amount of 50, and a remaining amount of 150. It contains one filling trade against the selling order. The selling order has a `closed` status now and it has completely filled its total initial amount of 150. However, it contains two trades, the first against order `b` and the second against order `i`. Thus each order can have one or more filling trades, depending on how their volumes were matched by the exchange engine.
-
-After the above sequence takes place, the updated orderbook will look like this.
-
-```
-    | price  | amount
-----|----------------
-  a |  1.200 | 200
-  s |  1.100 | 300
-  k |  0.900 | 100
-----|----------------
-  i |  0.700 | 150
-  d |  0.500 | 100
-```
-
-Notice that the order `b` has disappeared, the selling order also isn't there. All closed and fully-filled orders disappear from the orderbook. The order `i` which was filled partially and still has a remaining volume and an `open` status, is still there.
-
-
-### Personal Trades
-
-Most of unified methods will return either a single object or a plain array (a list) of objects (trades). However, very few exchanges (if any at all) will return all trades at once. Most often their APIs `limit` output to a certain number of most recent objects. **YOU CANNOT GET ALL OBJECTS SINCE THE BEGINNING OF TIME TO THE PRESENT MOMENT IN JUST ONE CALL**. Practically, very few exchanges will tolerate or allow that.
-
-As with all other unified methods for fetching historical data, the `fetchMyTrades` method accepts a `since` argument for [date-based pagination](#date-based-pagination). Just like with all other unified methods throughout the CCXT library, the `since` argument for `fetchMyTrades` must be an **integer timestamp in milliseconds**.
-
-To fetch historical trades, the user will need to traverse the data in portions or "pages" of objects. Pagination often implies *"fetching portions of data one by one"* in a loop.
-
-In most cases users are **required to use at least some type of [pagination](#pagination)** in order to get the expected results consistently.
-
-```JavaScript
-// JavaScript
-// fetchMyTrades (symbol = undefined, since = undefined, limit = undefined, params = {})
-
-if (exchange.has['fetchMyTrades']) {
-    const trades = await exchange.fetchMyTrades (symbol, since, limit, params)
-}
-```
-
-```Python
-# Python
-# fetch_my_trades(symbol=None, since=None, limit=None, params={})
-
-if exchange.has['fetchMyTrades']:
-    exchange.fetch_my_trades(symbol=None, since=None, limit=None, params={})
-```
-
-```PHP
-// PHP
-// fetch_my_trades($symbol = null, $since = null, $limit = null, $params = array())
-
-if ($exchange->has['fetchMyTrades']) {
-    $trades = $exchange->fetch_my_trades($symbol, $since, $limit, $params);
-}
-```
-
-Returns ordered array `[]` of trades (most recent trade last).
-
-#### Trade structure
-
-```JavaScript
-{
-    'info':         { ... },                    // the original decoded JSON as is
-    'id':           '12345-67890:09876/54321',  // string trade id
-    'timestamp':    1502962946216,              // Unix timestamp in milliseconds
-    'datetime':     '2017-08-17 12:42:48.000',  // ISO8601 datetime with milliseconds
-    'symbol':       'ETH/BTC',                  // symbol
-    'order':        '12345-67890:09876/54321',  // string order id or undefined/None/null
-    'type':         'limit',                    // order type, 'market', 'limit' or undefined/None/null
-    'side':         'buy',                      // direction of the trade, 'buy' or 'sell'
-    'takerOrMaker': 'taker',                    // string, 'taker' or 'maker'
-    'price':        0.06917684,                 // float price in quote currency
-    'amount':       1.5,                        // amount of base currency
-    'cost':         0.10376526,                 // total cost (including fees), `price * amount`
-    'fee':          {                           // provided by exchange or calculated by ccxt
-        'cost':  0.0015,                        // float
-        'currency': 'ETH',                      // usually base currency for buys, quote currency for sells
-        'rate': 0.002,                          // the fee rate (if available)
-    },
-}
-```
-
-- The work on `'fee'` info is still in progress, fee info may be missing partially or entirely, depending on the exchange capabilities.
-- The `fee` currency may be different from both traded currencies (for example, an ETH/BTC order with fees in USD).
-- The `cost` of the trade means `amount * price`. It is the total *quote* volume of the trade (whereas `amount` is the *base* volume). The cost field itself is there mostly for convenience and can be deduced from other fields.
-
-### Trades By Order Id
-
-```JavaScript
-// JavaScript
-// fetchOrderTrades (id, symbol = undefined, since = undefined, limit = undefined, params = {})
-
-if (exchange.has['fetchOrderTrades']) {
-    const trades = await exchange.fetchOrderTrades (orderId, symbol, since, limit, params)
-}
-```
-
-```Python
-# Python
-# fetch_order_trades(id, symbol=None, since=None, limit=None, params={})
-
-if exchange.has['fetchOrderTrades']:
-    exchange.fetch_order_trades(order_id, symbol=None, since=None, limit=None, params={})
-```
-
-```PHP
-// PHP
-// fetch_order_trades ($id, $symbol = null, $since = null, $limit = null, $params = array())
-
-if ($exchange->has['fetchOrderTrades']) {
-    $trades = $exchange->fetch_order_trades($order_id, $symbol, $since, $limit, $params);
-}
-```
-
 ## Funding Your Account
 
 ```diff
@@ -3114,9 +3109,9 @@ In some cases you can also use the withdrawal id to check withdrawal status late
     'addressFrom': '0x38b1F8644ED1Dbd5DcAedb3610301Bf5fa640D6f', // sender
     'address':  '0x02b0a9b7b4cDe774af0f8e47cb4f1c2ccdEa0806', // "from" or "to"
     'addressTo': '0x304C68D441EF7EB0E2c056E836E8293BD28F8129', // receiver
-    'tagFrom', '0xabcdef', // "tag" or "memo" or "payment_id" associated with the sender
-    'tag':      '0xabcdef' // "tag" or "memo" or "payment_id" associated with the address
-    'tagTo': '0xhijgklmn', // "tag" or "memo" or "payment_id" associated with the receiver
+    'tagFrom', '0xabcdef',   // "tag" or "memo" or "payment_id" associated with the sender
+    'tag':      '0xabcdef'   // "tag" or "memo" or "payment_id" associated with the address
+    'tagTo': '0xhijgklmn',   // "tag" or "memo" or "payment_id" associated with the receiver
     'type':     'deposit',   // or 'withdrawal', string
     'amount':    1.2345,     // float (does not include the fee)
     'currency': 'ETH',       // a common unified currency code, string
@@ -3243,6 +3238,66 @@ if ($exchange->has['fetchTransactions']) {
     throw new Exception ($exchange->id . ' does not have the fetch_transactions method');
 }
 ```
+
+# Positions
+
+```
+- this part of the unified API is currenty a work in progress
+- there may be some issues and missing implementations here and there
+- contributions, pull requests and feedback appreciated
+```
+
+Derivative trading has become increasingly popular within the crypto ecosystem. This can include futures with a set expiry date, perpetual swaps with funding payments, and inverse futures or swaps.
+
+We present a unified structure for the positions returned by exchanges.
+
+## Position Structure
+
+```Javascript
+{
+   'info': { ... },             // json response returned from the exchange as is
+   'id': '1234323',             // string, position id to reference the position, similar to an order id
+   'symbol': 'BTC/USD',         // uppercase string literal of a pair of currencies
+   'timestamp': 1607723554607,  // integer unix time since 1st Jan 1970 in milliseconds
+   'datetime': '2020-12-11T21:52:34.607Z',  // iso8601 representation of the unix time above
+   'isolated': true,            // boolean, whether or not the position is isolated, as oppose to cross where margin is added automatically
+   'hedged': false,             // boolean, whether or not the position is hedged, i.e. if trading in the opposite direction will close this position or make a new one
+   'side': 'long',              // string, long or short
+   'contracts': 5,              // float, number of contracts bought, aka the amount or size of the position
+   'price': 20000,              // float, the average entry price of the position
+   'markPrice': 20050,          // float, a price that is used for funding calculations
+   'notional': 100000,          // float, the number of contracts times the price
+   'leverage': 100,             // float, the leverage of the position, related to how many contracts you can buy with a given amount of collateral
+   'collateral': 5300,          // float, the maximum amount of collateral that can be lost, affected by pnl
+   'initialMargin': 5000,       // float, the amount of collateral that is locked up in this position in the same currency as the notional
+   'maintenanceMargin': 1000,   // float, the mininum amount of collateral needed to avoid being liquidated in the same currency as the notional
+   'initialMarginPercentage': 0.05,      // float, the initialMargin as a percentage of the notional
+   'maintenanceMarginPercentage': 0.01,  // float, the maintenanceMargin as a percentage of the notional
+   'unrealizedPnl': 300,        // float, the difference between the market price and the entry price times the number of contracts, can be negative
+   'realizedPnl': 10,           // float, the total funding and trading fees incurred by this position so far, can be negative
+   'pnl ': 310,                 // float, the sum of the realizedPnl and the unrealizedPnl, can be negative
+   'liquidationPrice': 19850,   // float, the price at which collateral becomes less than maintenanceMargin
+   'expiry': 1607723554607,     // integer, unix timestamp when the future "expires" to the price of the underlying index
+   'status': 'open',            // string, can be "open", "closed" or "liquidating"
+   `settlementCurrency': 'USDT' // will be the quote for linear contracts and the base for inverse contracts
+}
+```
+Positions allow you to borrow money from an exchange to go long or short on an market. Some exchanges require you to pay a funding fee to keep the position open.
+
+When you go long on a position you are betting that the price will be higher in the future and that the price will never be less than the `liquidationPrice`.
+
+As the price of the underlying index changes so will the `unrealisedPnl` and as a consequence the amount of `collateral` you have left in the position (since you can only close it at market price or worse). At some price you will have zero collateral left, this is called the "bust" or "zero" price. Beyond this point, if the price goes in the opposite direction far enough, the `collateral` of the position will drop below the `maintenanceMargin`. The `maintenanceMargin` acts as a safety buffer between your position and negative collateral, a scenario where the exchange incurs losses on your behalf. To protect itself the exchange will swiftly liquidate your position if and when this happens. Even if the price returns back above the `liquidationPrice` you will not get your money back since the exchange sold all the `contracts` you bought at market. In other words the `maintenanceMargin` is a hidden fee to borrow money.
+
+There are inverse contracts and linear contracts. The `notional` and `collateral` in inverse contracts is quoted as if they were traded `USD/BTC`, however the price is still quoted terms of `BTC/USD`. An inverse contract will allow you to go long or short on `BTC/USD` by putting up `BTC` as collateral. The API for inverse contracts is exactly the same as linear contracts.
+
+*Disclaimer:*
+
+**CRYPTO DERIVATIVES ARE EXTREMELY RISKY**
+
+**DO NOT TRADE MORE THAN YOU ARE PREPARED TO LOSE**
+
+**DO NOT TRADE FUTURES IF YOU DO NOT UNDERSTAND HOW THEY WORK**
+
 ## Fees
 
 **This section of the Unified CCXT API is under development.**
@@ -3286,7 +3341,7 @@ The exchange status describes the latest known information on the availability o
 - Updated using the dedicated exchange API status endpoint.
 
 ```Javascript
-fetchStatus(params = {})
+fetchStatus (params = {})
  ```
 
 #### Exchange Status Structure
@@ -3515,57 +3570,6 @@ class MyZaif extends \ccxt\zaif {
     }
 }
 ```
-#Positions
-
-Derivative trading has become increasingly popular within the crypto ecosystem. This can include futures with a set expiry date, perpetual swaps with funding payments, and inverse swaps with or without an expiry.
-
-We present a unified the structure of positions returned by exchanges.
-
-##Position Structure
-
-```
-{
-   'id': '1234323',             // string position id to reference the position, similar to an order id
-   'symbol': 'BTC/USD',         // uppercase string literal of a pair of currencies
-   'timestamp': 1607723554607,  // integer unix time since 1st Jan 1970 in milliseconds
-   'datetime': '2020-12-11T21:52:34.607Z',  // iso8601 representation of the unix time above
-   'isolated': true,            // boolean, whether or not the position is isolated, as oppose to cross where margin is added automatically
-   'hedged': false,             // boolean, whether or not the position is hedged, i.e. if trading in the opposite direction will close this position or make a new one
-   'side': 'long',              // string, long or short
-   'contracts': 5,              // float, number of contracts bought, aka the amount or size of the position
-   'price': 20000,              // float, the average entry price of the position
-   'markPrice': 20050,          // float, a price that is used for funding calculations
-   'notational': 100000,        // float, the number of contracts times the price
-   'leverage': 100,             // float, the leverage of the position, related to how many contracts you can buy with a given amount of collateral
-   'collateral': 5300,          // float, the maximum amount of collateral that can be lost, affected by pnl
-   'initialMargin': 5000,       // float, the amount of collateral that is locked up in this position in the same currency as the notational
-   'maintenanceMargin': 1000,   // float, the mininum amount of collateral needed to avoid being liquidated in the same currency as the notational
-   'initialMarginPercentage': 0.05,      // float, the initialMargin as a percentage of the notational
-   'maintenanceMarginPercentage': 0.01,  // float, the maintenanceMargin as a percentage of the notational
-   'unrealizedPnl': 300,        // float, the difference between the market price and the entry price times the number of contracts, can be negative
-   'realizedPnl': 10,           // float, the total funding and trading fees incurred by this position so far, can be negative
-   'pnl ': 310,                 // float, the sum of the realizedPnl and the unrealizedPnl, can be negative
-   'liquidationPrice': 19850,   // float, the price at which collateral becomes less than maintenanceMargin
-   'expiry': 1607723554607,     // integer, unix timestamp when the future "expires" to the price of the underlying index
-   'status': 'open',            // string, can be "open", "closed" or "liquidating"
-   `settlementCurrency': 'USDT' // will be the quote for linear contracts and the base for inverse contracts
-}
-```
-Positions allow you to borrow money from an exchange to go long or short on an market. Some exchanges require you to pay a funding fee to borrow the money and keep the position open.
-
-When you go long on a position you are betting that the price will be higher in the future and that the price will never be less than the `liquidationPrice`.
-
-*Disclaimer:*
-
-**CRYPTO DERIVATIVES ARE EXTREMELY RISKY**
-
-**DO NOT TRADE MORE THAN YOU ARE PREPARED TO LOSE**
-
-**DO NOT TRADE FUTURES IF YOU DO NOT UNDERSTAND HOW THEY WORK**
-
-As the price of the underlying index changes so will the `unrealisedPnl` and as a consequence the amount of `collateral` you have left in the position (since you can only close it at market price or worse). At some price you will have zero collateral left, this is called the "bust" or "zero" price. Beyond this point, if the price goes in the opposite direction far enough, the `collateral` of the position will drop below the `maintenanceMargin`. The `maintenanceMargin` acts as a safety buffer between your position and negative collateral, a scenario where the exchange incurs losses on your behalf. To protect itself the exchange will swiftly liquidate your position if and when this happens. Even if the price returns back above the `liquidationPrice` you will not get your money back since the exchange sold all the `contracts` you bought at market. In other words the `maintenanceMargin` is a hidden fee to borrow money.
-
-There are inverse contracts and linear contracts. The `notational` and `collateral` in inverse contracts is quoted as if they were traded `USD/BTC`, however the price is still quoted terms of `BTC/USD`. An inverse contract will allow you to go long or short on `BTC/USD` by putting up `BTC` as collateral. The API for inverse contracts is exactly the same as linear contracts.
 
 # Error Handling
 
