@@ -200,14 +200,15 @@ The unified ccxt API is a subset of methods common among the exchanges. It curre
 - [`createMarketSellOrder (symbol, amount[, params])`](#order-structure)
 - [`cancelOrder (id[, symbol[, params]])`](#order-structure)
 - [`fetchOrder (id[, symbol[, params]])`](#order-structure)
-- [`fetchOrders ([symbol[, since[, limit[, params]]]])`](#order-structure)
-- [`fetchOpenOrders ([symbol[, since, limit, params]]]])`](#order-structure)
-- [`fetchClosedOrders ([symbol[, since[, limit[, params]]]])`](#order-structure)
+- [`fetchOrders ([symbol[, since[, limit[, params]]]])`](#all-orders)
+- [`fetchOpenOrders ([symbol[, since, limit, params]]]])`](#open-orders)
+- [`fetchClosedOrders ([symbol[, since[, limit[, params]]]])`](#closed-orders)
 - [`fetchTrades (symbol[, since[, [limit, [params]]]])`](#trade-structure): Fetch recent trades for a particular trading symbol. 
 - [`fetchMyTrades ([symbol[, since[, limit[, params]]]])`](#trade-structure)
 - [`fetchTransactions ([symbol[, since[, limit[, params]]]])`](#transaction-structure)
-- [`fetchWithdrawals ([symbol[, since[, limit[, params]]]])`](#transaction-structure)
-- [`fetchDepositions ([symbol[, since[, limit[, params]]]])`](#transaction-structure)
+- [`fetchWithdrawals ([symbol[, since[, limit[, params]]]])`](#withdraw)
+- [`fetchDeposits ([symbol[, since[, limit[, params]]]])`](#deposit)
+- [`fetchDepositAddress (code, params)`](#address-structure)
 - [`fetchPositions` ([symbols[, since[, limit[, params]]]])](#position-structure) **RECENTLY UNIFIED**
 - ...
 
@@ -3012,8 +3013,6 @@ As such, `cancelOrder()` can throw an `OrderNotFound` exception in these cases:
 - contributions, pull requests and feedback appreciated
 ```
 
-### Deposit
-
 In order to deposit funds to an exchange you must get an address from the exchange for the currency you want to deposit there. Most of exchanges will create and manage those addresses for the user. Some exchanges will also allow the user to create new addresses for deposits. Some of exchanges require a new deposit address to be created for each new deposit.
 
 The address for depositing can be either an already existing address that was created previously with the exchange or it can be created upon request. In order to see which of the two methods are supported, check the `exchange.has['fetchDepositAddress']` and `exchange.has['createDepositAddress']` properties. Both methods return an [address structure](#address-structure)
@@ -3066,7 +3065,7 @@ exchange.withdraw(code, amount, address, tag=None, params={})
 
 ```PHP
 // PHP
-$exchange->withdraw ($code, $amount, $address, $tag = null, $params = array ())
+$exchange->withdraw($code, $amount, $address, $tag = null, $params = array ())
 ```
 
 The `code` is the currency code (usually three or more uppercase letters, but can be different in some cases).
@@ -3281,13 +3280,39 @@ It is recommended to use the `maintenanceMargin` and `initialMargin` instead of 
 
 An inverse contract will allow you to go long or short on `BTC/USD` by putting up `BTC` as collateral. Our API for inverse contracts is the same as for linear contracts. The amounts in an inverse contracts are quoted as if they were traded `USD/BTC`, however the price is still quoted terms of `BTC/USD`.  The formula for the profit and loss of a inverse contract is `(1/markPrice - 1/price) * contracts`. The profit and loss and `collateral` will now be quoted in `BTC`, and the number of `contracts` are quoted in `USD`.
 
-*Disclaimer:*
+### Using fetchPositions
 
-**CRYPTO DERIVATIVES ARE EXTREMELY RISKY**
+All the market types defined in `this.options['fetchMarkets']` are loaded upon calling `exchange.loadMarkets`, including futures and swaps. Some exchanges serve linear and inverse markets from different endpoints, and they might also have different endpoints for futures (that expire) and swaps (that are perpetual). Thoughout the library we will use the term 'linear' to reference `USD` settled futures, 'inverse' to reference base currency settled futures, 'swap' to reference perpertual swaps, and 'future' to reference a contract that expires to the price of an underlying index. You might want to change 
 
-**DO NOT TRADE MORE THAN YOU ARE PREPARED TO LOSE**
+```Javascript
+binance.options['fetchMarkets'] = [ 'linear' ]
+``` 
 
-**DO NOT TRADE FUTURES IF YOU DO NOT UNDERSTAND HOW THEY WORK**
+if you are only interested in loading the USDT-margined futures and 
+
+```Javascript
+binance.options['fetchMarkets'] = [ 'linear', 'inverse' ]
+``` 
+
+if you are interested in loading both the USDT-margined futures and the COIN-margined futures. Information about the positions can be served from different endpoints depending on the exchange. In the case that there are multiple endpoints serving different types of derivatives CCXT will default to just loading the 'linear' (as oppose to the 'inverse') contracts or the 'swap' (as oppose to the 'future') contracts. You can set:
+
+```Javascript
+binance.options['fetchPositions'] = 'inverse'
+await binance.fetchPositions (undefined, undefined, undefined, { 'type': 'inverse' }} // equivalent to the above
+``` 
+
+if you want to get position information of the inverse contracts.
+
+##### Naming conventions of futures
+
+We currently load spot markets with the unified `BASE/QUOTE` symbol schema into the `.markets` mapping, indexed by symbol. This would cause a naming conflict for futures that have the same symbol as their spot market counterparts. To accomodate both types of markets in the `.markets` we require the symbols between 'future' and 'spot' markets to be distinct, as well as the symbols between 'linear' and 'inverse' contracts to be distinct.
+
+```
+BTC/USDT/PERP   --->   *linear* perpetual *swap*
+BTC/USDT/0326   --->   *linear* expiring *future*
+BTC/USDT-PERP   --->   *inverse* perpetual *swap*
+BTC/USDT-0326   --->   *inverse* expiring *future*
+```
 
 ## Fees
 
@@ -3314,14 +3339,7 @@ Because this is still a work in progress, some or all of methods and info descri
 
 ### Fee Structure
 
-```Javascript
-{
-    'type': takerOrMaker,
-    'currency': 'BTC', // the unified fee currency code
-    'rate': percentage, // the fee rate, 0.05% = 0.0005, 1% = 0.01, ...
-    'cost': feePaid, // the fee cost (amount * fee rate)
-}
-```
+ADD ACCURATE FEE STRUCTURE HERE
 
 ### Exchange Status
 

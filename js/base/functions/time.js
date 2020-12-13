@@ -179,6 +179,13 @@ const parseYYMMDD = (year = undefined, month = undefined, day = undefined) => {
     return result.getTime ()
 }
 
+const getMMDD = (timestamp) => {
+    const date = new Date (timestamp)
+    const month = date.getUTCMonth () + 1
+    const day = date.getUTCDay ()
+    return month.toString ().padStart (2, '0') + day.toString ().padStart (2, '0')
+}
+
 module.exports =
 
     {
@@ -196,6 +203,7 @@ module.exports =
         , ymdhms
         , setTimeout_safe
         , parseYYMMDD
+        , getMMDD
         , sleep: ms => new Promise (resolve => setTimeout_safe (resolve, ms))
         , TimedOut
         , timeout: async (ms, promise) => {
