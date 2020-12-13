@@ -3282,7 +3282,7 @@ An inverse contract will allow you to go long or short on BTC/USD by putting up 
 
 #### Loading Futures Markets
 
-All the market types defined in `this.options['fetchMarkets']` are loaded upon calling `exchange.loadMarkets`, including futures and swaps. Some exchanges serve linear and inverse markets from different endpoints, and they might also have different endpoints for futures (that expire) and swaps (that are perpetual). Thoughout the library we will use the term 'linear' to reference `USD` settled futures, 'inverse' to reference base currency settled futures, 'swap' to reference perpertual swaps, and 'future' to reference a contract that expires to the price of an underlying index. You might want to change 
+All the market types defined in `this.options['fetchMarkets']` are loaded upon calling `exchange.loadMarkets`, including futures and swaps. Some exchanges serve linear and inverse markets from different endpoints, and they might also have different endpoints for futures (that expire) and swaps (that are perpetual). Thoughout the library we will use the term `linear` to reference USD settled futures, `inverse` to reference base currency settled futures, `swap` to reference perpertual swaps, and `future` to reference a contract that expires to the price of an underlying index. You might want to change 
 
 ```Javascript
 binance.options['fetchMarkets'] = [ 'linear' ]
@@ -3296,7 +3296,7 @@ binance.options['fetchMarkets'] = [ 'linear', 'inverse' ]
 
 #### Using fetchPositions
 
-if you are interested in loading both the USDT-margined futures and the COIN-margined futures. Information about the positions can be served from different endpoints depending on the exchange. In the case that there are multiple endpoints serving different types of derivatives CCXT will default to just loading the 'linear' (as oppose to the 'inverse') contracts or the 'swap' (as oppose to the 'future') contracts. You can set:
+if you are interested in loading both the USDT-margined futures and the COIN-margined futures. Information about the positions can be served from different endpoints depending on the exchange. In the case that there are multiple endpoints serving different types of derivatives CCXT will default to just loading the "linear" (as oppose to the "inverse") contracts or the "swap" (as oppose to the "future") contracts. You can set:
 
 ```Javascript
 binance.options['fetchPositions'] = 'inverse'
@@ -3305,7 +3305,7 @@ await binance.fetchPositions (undefined, undefined, undefined, { 'type': 'invers
 
 if you want to get position information of the inverse contracts.
 
-You may also filter out just the open positions by doing
+You can also filter out the open positions by doing
 
 ```Javascript
 await binance.fetchOpenPositions ()
