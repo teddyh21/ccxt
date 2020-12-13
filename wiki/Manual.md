@@ -209,7 +209,7 @@ The unified ccxt API is a subset of methods common among the exchanges. It curre
 - [`fetchWithdrawals ([symbol[, since[, limit[, params]]]])`](#withdraw)
 - [`fetchDeposits ([symbol[, since[, limit[, params]]]])`](#deposit)
 - [`fetchDepositAddress (code, params)`](#address-structure)
-- [`fetchPositions` ([symbols[, since[, limit[, params]]]])](#position-structure) **RECENTLY UNIFIED**
+- [`fetchPositions ([symbols[, since[, limit[, params]]]])`](#position-structure) **RECENTLY UNIFIED**
 - ...
 
 ### Overriding Unified API Params
@@ -3292,11 +3292,13 @@ if you are only interested in loading the USDT-margined futures and
 
 ```Javascript
 binance.options['fetchMarkets'] = [ 'linear', 'inverse' ]
-``` 
+```
+
+if you are interested in loading both the USDT-margined futures and the COIN-margined futures.
 
 #### Using fetchPositions
 
-if you are interested in loading both the USDT-margined futures and the COIN-margined futures. Information about the positions can be served from different endpoints depending on the exchange. In the case that there are multiple endpoints serving different types of derivatives CCXT will default to just loading the "linear" (as oppose to the "inverse") contracts or the "swap" (as oppose to the "future") contracts. If you want to get position information of the inverse contracts you can set:
+Information about the positions can be served from different endpoints depending on the exchange. In the case that there are multiple endpoints serving different types of derivatives CCXT will default to just loading the "linear" (as oppose to the "inverse") contracts or the "swap" (as oppose to the "future") contracts. If you want to get position information of the inverse contracts you can set:
 
 ```Javascript
 binance.options['fetchPositions'] = 'inverse'
