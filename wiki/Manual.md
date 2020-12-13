@@ -3276,11 +3276,11 @@ When you go long on a position you are betting that the price will be higher in 
 
 As the price of the underlying index changes so does the unrealisedPnl and as a consequence the amount of collateral you have left in the position (since you can only close it at market price or worse). At some price you will have zero collateral left, this is called the "bust" or "zero" price. Beyond this point, if the price goes in the opposite direction far enough, the collateral of the position will drop below the `maintenanceMargin`. The maintenanceMargin acts as a safety buffer between your position and negative collateral, a scenario where the exchange incurs losses on your behalf. To protect itself the exchange will swiftly liquidate your position if and when this happens. Even if the price returns back above the liquidationPrice you will not get your money back since the exchange sold all the `contracts` you bought at market. In other words the maintenanceMargin is a hidden fee to borrow money.
 
-It is recommended to use the `maintenanceMargin` and `initialMargin` instead of the `maintenanceMarginPercentage` and `initialMarginPercentage` since these tend to be more accurate. The maintenanceMargin might be calculated from other factors outside of the `maintenanceMarginPercentage` including the funding rate and taker fees, for example on [kucoin](https://futures.kucoin.com/contract/detail).
+It is recommended to use the `maintenanceMargin` and `initialMargin` instead of the `maintenanceMarginPercentage` and `initialMarginPercentage` since these tend to be more accurate. The maintenanceMargin might be calculated from other factors outside of the maintenanceMarginPercentage including the funding rate and taker fees, for example on [kucoin](https://futures.kucoin.com/contract/detail).
 
 An inverse contract will allow you to go long or short on BTC/USD by putting up BTC as collateral. Our API for inverse contracts is the same as for linear contracts. The amounts in an inverse contracts are quoted as if they were traded USD/BTC, however the price is still quoted terms of BTC/USD.  The formula for the profit and loss of a inverse contract is `(1/markPrice - 1/price) * contracts`. The profit and loss and collateral will now be quoted in BTC, and the number of contracts are quoted in USD.
 
-### Using fetchPositions
+#### Loading Futures Markets
 
 All the market types defined in `this.options['fetchMarkets']` are loaded upon calling `exchange.loadMarkets`, including futures and swaps. Some exchanges serve linear and inverse markets from different endpoints, and they might also have different endpoints for futures (that expire) and swaps (that are perpetual). Thoughout the library we will use the term 'linear' to reference `USD` settled futures, 'inverse' to reference base currency settled futures, 'swap' to reference perpertual swaps, and 'future' to reference a contract that expires to the price of an underlying index. You might want to change 
 
@@ -3294,6 +3294,8 @@ if you are only interested in loading the USDT-margined futures and
 binance.options['fetchMarkets'] = [ 'linear', 'inverse' ]
 ``` 
 
+#### Using fetchPositions
+
 if you are interested in loading both the USDT-margined futures and the COIN-margined futures. Information about the positions can be served from different endpoints depending on the exchange. In the case that there are multiple endpoints serving different types of derivatives CCXT will default to just loading the 'linear' (as oppose to the 'inverse') contracts or the 'swap' (as oppose to the 'future') contracts. You can set:
 
 ```Javascript
@@ -3303,7 +3305,15 @@ await binance.fetchPositions (undefined, undefined, undefined, { 'type': 'invers
 
 if you want to get position information of the inverse contracts.
 
-##### Naming conventions of futures
+You may also filter out just the open positions by doing
+
+```Javascript
+await binance.fetchOpenPositions ()
+```
+
+This is an emulated function and just filters data from `fetchPositions`.
+
+#### Naming conventions of futures
 
 We currently load spot markets with the unified `BASE/QUOTE` symbol schema into the `.markets` mapping, indexed by symbol. This would cause a naming conflict for futures that have the same symbol as their spot market counterparts. To accomodate both types of markets in the `.markets` we require the symbols between 'future' and 'spot' markets to be distinct, as well as the symbols between 'linear' and 'inverse' contracts to be distinct.
 
