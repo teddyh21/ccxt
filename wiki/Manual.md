@@ -3316,10 +3316,10 @@ This is an emulated function and just filters data from `fetchPositions`.
 We currently load spot markets with the unified `BASE/QUOTE` symbol schema into the `.markets` mapping, indexed by symbol. This would cause a naming conflict for futures that have the same symbol as their spot market counterparts. To accomodate both types of markets in the `.markets` we require the symbols between 'future' and 'spot' markets to be distinct, as well as the symbols between 'linear' and 'inverse' contracts to be distinct.
 
 ```
-BTC/USDT-PERP   --->   *linear* perpetual *swap*
-BTC/USDT-0326   --->   *linear* expiring *future*
-BTC/USDT:PERP   --->   *inverse* perpetual *swap*
-BTC/USDT:0326   --->   *inverse* expiring *future*
+BTC/USDT>PERP   --->   *linear* perpetual *swap*
+BTC/USDT>0326   --->   *linear* expiring *future*
+BTC/USDT<PERP   --->   *inverse* perpetual *swap*
+BTC/USDT<0326   --->   *inverse* expiring *future*
 ```
 
 ## Fees
