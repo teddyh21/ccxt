@@ -3318,8 +3318,8 @@ We currently load spot markets with the unified `BASE/QUOTE` symbol schema into 
 ```
 BTC/USDT/PERP   --->   *linear* perpetual *swap*
 BTC/USDT/0326   --->   *linear* expiring *future*
-BTC/USDT-PERP   --->   *inverse* perpetual *swap*
-BTC/USDT-0326   --->   *inverse* expiring *future*
+BTC/USDT\PERP   --->   *inverse* perpetual *swap*
+BTC/USDT\0326   --->   *inverse* expiring *future*
 ```
 
 ## Fees
