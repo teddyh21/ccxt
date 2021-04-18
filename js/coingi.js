@@ -119,6 +119,8 @@ module.exports = class coingi extends Exchange {
                 'amount': 8,
                 'price': 8,
             };
+            const priceLimit = '1e-8';
+            const amountLimit = '1e-8';
             result.push ({
                 'id': id,
                 'symbol': symbol,
@@ -131,15 +133,15 @@ module.exports = class coingi extends Exchange {
                 'precision': precision,
                 'limits': {
                     'amount': {
-                        'min': Math.pow (10, -precision['amount']),
-                        'max': Math.pow (10, precision['amount']),
+                        'min': this.parseNumber (amountLimit),
+                        'max': undefined,
                     },
                     'price': {
-                        'min': Math.pow (10, -precision['price']),
+                        'min': this.parseNumber (priceLimit),
                         'max': undefined,
                     },
                     'cost': {
-                        'min': 0,
+                        'min': undefined,
                         'max': undefined,
                     },
                 },
