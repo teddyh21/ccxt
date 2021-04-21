@@ -192,8 +192,8 @@ module.exports = class probit extends Exchange {
             const active = !closed;
             const amountPrecisionString = this.safeString (market, 'quantity_precision', false);
             const costPrecisionString = this.safeString (market, 'cost_precision', false);
-            const amountPrecision = amountPrecisionString ? '1e-' + amountPrecisionString : undefined;
-            const costPrecision = costPrecisionString ? '1e-' + costPrecisionString : undefined;
+            const amountPrecision = this.parsePrecision (amountPrecisionString);
+            const costPrecision = this.parsePrecision (costPrecisionString);
             const precision = {
                 'amount': this.parseNumber (amountPrecision),
                 'price': this.safeNumber (market, 'price_increment'),
