@@ -98,6 +98,7 @@ module.exports = class yobit extends Exchange {
                 'CAT': 'BitClave',
                 'CBC': 'CryptoBossCoin',
                 'CMT': 'CometCoin',
+                'COIN': 'Coin.com',
                 'COV': 'Coven Coin',
                 'COVX': 'COV',
                 'CPC': 'Capricoin',
@@ -127,6 +128,7 @@ module.exports = class yobit extends Exchange {
                 'INSANE': 'INSN',
                 'JNT': 'JointCoin',
                 'JPC': 'JupiterCoin',
+                'JWL': 'Jewels',
                 'KNC': 'KingN Coin',
                 'LBTCX': 'LiteBitcoin',
                 'LIZI': 'LiZi',
@@ -136,6 +138,7 @@ module.exports = class yobit extends Exchange {
                 'LUN': 'LunarCoin',  // they just change the ticker if it is already taken
                 'MASK': 'Yobit MASK',
                 'MDT': 'Midnight',
+                'MIS': 'MIScoin',
                 'NAV': 'NavajoCoin',
                 'NBT': 'NiceBytes',
                 'OMG': 'OMGame',

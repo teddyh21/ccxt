@@ -155,13 +155,15 @@ class idex extends Exchange {
             $base = $this->safe_currency_code($baseId);
             $quote = $this->safe_currency_code($quoteId);
             $symbol = $base . '/' . $quote;
-            $basePrecision = $this->safe_integer($entry, 'baseAssetPrecision');
-            $quotePrecision = $this->safe_integer($entry, 'quoteAssetPrecision');
+            $basePrecisionString = $this->safe_string($entry, 'baseAssetPrecision');
+            $quotePrecisionString = $this->safe_string($entry, 'quoteAssetPrecision');
+            $basePrecision = ($basePrecisionString === null) ? null : '1e-' . $basePrecisionString;
+            $quotePrecision = ($quotePrecisionString === null) ? null : '1e-' . $quotePrecisionString;
             $status = $this->safe_string($entry, 'status');
             $active = $status === 'active';
             $precision = array(
-                'amount' => $basePrecision,
-                'price' => $quotePrecision,
+                'amount' => intval($basePrecisionString),
+                'price' => intval($quotePrecisionString),
             );
             $result[] = array(
                 'symbol' => $symbol,
@@ -175,11 +177,11 @@ class idex extends Exchange {
                 'precision' => $precision,
                 'limits' => array(
                     'amount' => array(
-                        'min' => pow(10, -$precision['amount']),
+                        'min' => $this->parse_number($basePrecision),
                         'max' => null,
                     ),
                     'price' => array(
-                        'min' => null,
+                        'min' => $this->parse_number($quotePrecision),
                         'max' => null,
                     ),
                     'cost' => array(
@@ -529,9 +531,10 @@ class idex extends Exchange {
             $entry = $response[$i];
             $name = $this->safe_string($entry, 'name');
             $currencyId = $this->safe_string($entry, 'symbol');
-            $precision = $this->safe_integer($entry, 'exchangeDecimals');
+            $precisionString = $this->safe_string($entry, 'exchangeDecimals');
             $code = $this->safe_currency_code($currencyId);
-            $lot = pow(-10, $precision);
+            $precision = ($precisionString === null) ? null : '1e-' . $precisionString;
+            $lot = $this->parse_number($precision);
             $result[$code] = array(
                 'id' => $currencyId,
                 'code' => $code,
@@ -540,11 +543,9 @@ class idex extends Exchange {
                 'name' => $name,
                 'active' => null,
                 'fee' => null,
-                'precision' => $precision,
+                'precision' => intval($precisionString),
                 'limits' => array(
                     'amount' => array( 'min' => $lot, 'max' => null ),
-                    'price' => array( 'min' => $lot, 'max' => null ),
-                    'cost' => array( 'min' => null, 'max' => null ),
                     'withdraw' => array( 'min' => $lot, 'max' => null ),
                 ),
             );
@@ -800,7 +801,7 @@ class idex extends Exchange {
         //             "time" => 1598873478650,
         //             "makerSide" => "sell",
         //             "sequence" => 5053,
-        //             "$fee" => "0.00080000",
+        //             "fee" => "0.00080000",
         //             "feeAsset" => "DIL",
         //             "gas" => "0.00857497",
         //             "liquidity" => "taker",
@@ -825,24 +826,13 @@ class idex extends Exchange {
         $price = $this->safe_number($order, 'price');
         $rawStatus = $this->safe_string($order, 'status');
         $status = $this->parse_order_status($rawStatus);
-        $fee = array(
-            'currency' => null,
-            'cost' => null,
-        );
-        $lastTrade = null;
-        for ($i = 0; $i < count($trades); $i++) {
-            $lastTrade = $trades[$i];
-            $fee['currency'] = $lastTrade['fee']['currency'];
-            $fee['cost'] = $this->sum($fee['cost'], $lastTrade['fee']['cost']);
-        }
-        $lastTradeTimestamp = $this->safe_integer($lastTrade, 'timestamp');
         return $this->safe_order(array(
             'info' => $order,
             'id' => $id,
             'clientOrderId' => $clientOrderId,
             'timestamp' => $timestamp,
             'datetime' => $this->iso8601($timestamp),
-            'lastTradeTimestamp' => $lastTradeTimestamp,
+            'lastTradeTimestamp' => null,
             'symbol' => $symbol,
             'type' => $type,
             'timeInForce' => null,
@@ -856,7 +846,7 @@ class idex extends Exchange {
             'filled' => $filled,
             'remaining' => null,
             'status' => $status,
-            'fee' => $fee,
+            'fee' => null,
             'trades' => $trades,
         ));
     }

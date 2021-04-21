@@ -236,14 +236,6 @@ class buda(Exchange):
                         'min': minimum,
                         'max': None,
                     },
-                    'price': {
-                        'min': minimum,
-                        'max': None,
-                    },
-                    'cost': {
-                        'min': None,
-                        'max': None,
-                    },
                     'deposit': {
                         'min': float(currency['deposit_minimum'][0]),
                         'max': None,
@@ -549,9 +541,6 @@ class buda(Exchange):
         if price is None:
             if limitPrice is not None:
                 price = limitPrice
-        average = None
-        if (cost is not None) and (filled is not None) and (filled > 0):
-            average = self.price_to_precision(symbol, cost / filled)
         paidFee = self.safe_value(order, 'paid_fee', [])
         feeCost = self.safe_number(paidFee, 0)
         fee = None
@@ -562,7 +551,7 @@ class buda(Exchange):
                 'cost': feeCost,
                 'code': feeCurrencyCode,
             }
-        return {
+        return self.safe_order({
             'info': order,
             'id': id,
             'clientOrderId': None,
@@ -577,14 +566,14 @@ class buda(Exchange):
             'side': side,
             'price': price,
             'stopPrice': None,
-            'average': average,
+            'average': None,
             'cost': cost,
             'amount': amount,
             'filled': filled,
             'remaining': remaining,
             'trades': None,
             'fee': fee,
-        }
+        })
 
     def is_fiat(self, code):
         fiats = {

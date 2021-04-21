@@ -3,7 +3,7 @@
 //  ---------------------------------------------------------------------------
 
 const Exchange = require ('./base/Exchange');
-const { ExchangeError, InvalidOrder, InsufficientFunds, AuthenticationError } = require ('./base/errors');
+const { ExchangeError, InvalidOrder, InsufficientFunds, AuthenticationError, BadSymbol } = require ('./base/errors');
 const Precise = require ('./base/Precise');
 
 //  ---------------------------------------------------------------------------
@@ -112,6 +112,7 @@ module.exports = class qtrade extends Exchange {
                 'exact': {
                     'invalid_auth': AuthenticationError,
                     'insuff_funds': InsufficientFunds,
+                    'market_not_found': BadSymbol, // {"errors":[{"code":"market_not_found","title":"Requested market does not exist"}]}
                 },
             },
         });
@@ -271,14 +272,6 @@ module.exports = class qtrade extends Exchange {
                 'limits': {
                     'amount': {
                         'min': this.safeNumber (currency, 'minimum_order'),
-                        'max': undefined,
-                    },
-                    'price': {
-                        'min': undefined,
-                        'max': undefined,
-                    },
-                    'cost': {
-                        'min': undefined,
                         'max': undefined,
                     },
                     'withdraw': {
@@ -705,7 +698,7 @@ module.exports = class qtrade extends Exchange {
             const code = this.safeCurrencyCode (currencyId);
             const account = (code in result) ? result[code] : this.account ();
             account['free'] = this.safeString (balance, 'balance');
-            account['used'] = 0;
+            account['used'] = '0';
             result[code] = account;
         }
         balances = this.safeValue (data, 'order_balances', []);

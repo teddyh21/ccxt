@@ -152,13 +152,15 @@ module.exports = class idex extends Exchange {
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
             const symbol = base + '/' + quote;
-            const basePrecision = this.safeInteger (entry, 'baseAssetPrecision');
-            const quotePrecision = this.safeInteger (entry, 'quoteAssetPrecision');
+            const basePrecisionString = this.safeString (entry, 'baseAssetPrecision');
+            const quotePrecisionString = this.safeString (entry, 'quoteAssetPrecision');
+            const basePrecision = (basePrecisionString === undefined) ? undefined : '1e-' + basePrecisionString;
+            const quotePrecision = (quotePrecisionString === undefined) ? undefined : '1e-' + quotePrecisionString;
             const status = this.safeString (entry, 'status');
             const active = status === 'active';
             const precision = {
-                'amount': basePrecision,
-                'price': quotePrecision,
+                'amount': parseInt (basePrecisionString),
+                'price': parseInt (quotePrecisionString),
             };
             result.push ({
                 'symbol': symbol,
@@ -172,11 +174,11 @@ module.exports = class idex extends Exchange {
                 'precision': precision,
                 'limits': {
                     'amount': {
-                        'min': Math.pow (10, -precision['amount']),
+                        'min': this.parseNumber (basePrecision),
                         'max': undefined,
                     },
                     'price': {
-                        'min': undefined,
+                        'min': this.parseNumber (quotePrecision),
                         'max': undefined,
                     },
                     'cost': {
@@ -526,9 +528,10 @@ module.exports = class idex extends Exchange {
             const entry = response[i];
             const name = this.safeString (entry, 'name');
             const currencyId = this.safeString (entry, 'symbol');
-            const precision = this.safeInteger (entry, 'exchangeDecimals');
+            const precisionString = this.safeString (entry, 'exchangeDecimals');
             const code = this.safeCurrencyCode (currencyId);
-            const lot = Math.pow (-10, precision);
+            const precision = (precisionString === undefined) ? undefined : '1e-' + precisionString;
+            const lot = this.parseNumber (precision);
             result[code] = {
                 'id': currencyId,
                 'code': code,
@@ -537,11 +540,9 @@ module.exports = class idex extends Exchange {
                 'name': name,
                 'active': undefined,
                 'fee': undefined,
-                'precision': precision,
+                'precision': parseInt (precisionString),
                 'limits': {
                     'amount': { 'min': lot, 'max': undefined },
-                    'price': { 'min': lot, 'max': undefined },
-                    'cost': { 'min': undefined, 'max': undefined },
                     'withdraw': { 'min': lot, 'max': undefined },
                 },
             };
@@ -822,24 +823,13 @@ module.exports = class idex extends Exchange {
         const price = this.safeNumber (order, 'price');
         const rawStatus = this.safeString (order, 'status');
         const status = this.parseOrderStatus (rawStatus);
-        const fee = {
-            'currency': undefined,
-            'cost': undefined,
-        };
-        let lastTrade = undefined;
-        for (let i = 0; i < trades.length; i++) {
-            lastTrade = trades[i];
-            fee['currency'] = lastTrade['fee']['currency'];
-            fee['cost'] = this.sum (fee['cost'], lastTrade['fee']['cost']);
-        }
-        const lastTradeTimestamp = this.safeInteger (lastTrade, 'timestamp');
         return this.safeOrder ({
             'info': order,
             'id': id,
             'clientOrderId': clientOrderId,
             'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
-            'lastTradeTimestamp': lastTradeTimestamp,
+            'lastTradeTimestamp': undefined,
             'symbol': symbol,
             'type': type,
             'timeInForce': undefined,
@@ -853,7 +843,7 @@ module.exports = class idex extends Exchange {
             'filled': filled,
             'remaining': undefined,
             'status': status,
-            'fee': fee,
+            'fee': undefined,
             'trades': trades,
         });
     }

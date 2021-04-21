@@ -114,6 +114,7 @@ class qtrade extends Exchange {
                 'exact' => array(
                     'invalid_auth' => '\\ccxt\\AuthenticationError',
                     'insuff_funds' => '\\ccxt\\InsufficientFunds',
+                    'market_not_found' => '\\ccxt\\BadSymbol', // array("errors":[array("code":"market_not_found","title":"Requested market does not exist")])
                 ),
             ),
         ));
@@ -273,14 +274,6 @@ class qtrade extends Exchange {
                 'limits' => array(
                     'amount' => array(
                         'min' => $this->safe_number($currency, 'minimum_order'),
-                        'max' => null,
-                    ),
-                    'price' => array(
-                        'min' => null,
-                        'max' => null,
-                    ),
-                    'cost' => array(
-                        'min' => null,
                         'max' => null,
                     ),
                     'withdraw' => array(
@@ -707,7 +700,7 @@ class qtrade extends Exchange {
             $code = $this->safe_currency_code($currencyId);
             $account = (is_array($result) && array_key_exists($code, $result)) ? $result[$code] : $this->account();
             $account['free'] = $this->safe_string($balance, 'balance');
-            $account['used'] = 0;
+            $account['used'] = '0';
             $result[$code] = $account;
         }
         $balances = $this->safe_value($data, 'order_balances', array());

@@ -13,6 +13,7 @@ except NameError:
     basestring = str  # Python 2
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
+from ccxt.base.errors import BadSymbol
 from ccxt.base.errors import InsufficientFunds
 from ccxt.base.errors import InvalidOrder
 from ccxt.base.precise import Precise
@@ -123,6 +124,7 @@ class qtrade(Exchange):
                 'exact': {
                     'invalid_auth': AuthenticationError,
                     'insuff_funds': InsufficientFunds,
+                    'market_not_found': BadSymbol,  # {"errors":[{"code":"market_not_found","title":"Requested market does not exist"}]}
                 },
             },
         })
@@ -279,14 +281,6 @@ class qtrade(Exchange):
                 'limits': {
                     'amount': {
                         'min': self.safe_number(currency, 'minimum_order'),
-                        'max': None,
-                    },
-                    'price': {
-                        'min': None,
-                        'max': None,
-                    },
-                    'cost': {
-                        'min': None,
                         'max': None,
                     },
                     'withdraw': {
@@ -692,7 +686,7 @@ class qtrade(Exchange):
             code = self.safe_currency_code(currencyId)
             account = result[code] if (code in result) else self.account()
             account['free'] = self.safe_string(balance, 'balance')
-            account['used'] = 0
+            account['used'] = '0'
             result[code] = account
         balances = self.safe_value(data, 'order_balances', [])
         for i in range(0, len(balances)):

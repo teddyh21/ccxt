@@ -328,6 +328,35 @@ $exchange = new $exchange_class(array(
 $exchange->options['adjustForTimeDifference'] = false;
 ```
 
+### Testnets And Sandbox Environments
+
+Some exchanges also offer separate APIs for testing purposes that allows developers to trade virtual money for free and test out their ideas. Those APIs are called _"testnets", "sandboxes" or "staging environments"_ (with virtual testing assets) as opposed to _"mainnets" and "production environments"_ (with real assets). Most often a sandboxed API is a clone of a production API, so, it's literally the same API, except for the URL to the exchange server.
+
+CCXT unifies that aspect and allows the user to switch to the exchange's sandbox (if supported by the underlying exchange).
+To switch to the sandbox one has to call the `exchange.setSandboxMode (true)` or `exchange.set_sandbox_mode(true)` **immediately after creating the exchange before any other call**!
+
+```JavaScript
+// JavaScript
+const exchange = new ccxt.binance (config)
+exchange.setSandboxMode (true) // enable sandbox mode
+```
+
+```Python
+# Python
+const exchange = new ccxt.binance(config)
+exchange.set_sandbox_mode(true)  # enable sandbox mode
+```
+
+```PHP
+// PHP
+$exchange = new \ccxt\binance($config);
+$exchange->set_sandbox_mode(true); // enable sandbox mode
+```
+
+- The `exchange.setSandboxMode (true) / exchange.set_sandbox_mode (True)` has to be your first call immediately after creating the exchange (before any other calls)
+- To obtain the [API keys](#authentication) to the sandbox the user has to register with the sandbox website of the exchange in question and create a sandbox keypair
+- **Sandbox keys are not interchangeable with production keys!**
+
 ## Exchange Structure
 
 Every exchange has a set of properties and methods, most of which you can override by passing an associative array of params to an exchange constructor. You can also make a subclass and override everything.
@@ -747,8 +776,6 @@ Each market is an associative array (aka dictionary) with the following keys:
             'min': 0.01,     // order amount should be > min
             'max': 1000,     // order amount should be < max
         },
-        'price':    { ... }, // same min/max limits for the price of the order
-        'cost':     { ... }, // same limits for order cost = price * amount
         'withdraw': { ... }, // withdrawal limits
     },
     'info': { ... }, // the original unparsed currency info from the exchange
@@ -767,7 +794,7 @@ Each currency is an associative array (aka dictionary) with the following keys:
     - If `exchange.precisionMode` is `DECIMAL_PLACES` then the `currency['precision']` designates the number of decimal digits after the dot.
     - If `exchange.precisionMode` is `SIGNIFICANT_DIGITS` then the `currency['precision']` designates the number of non-zero digits after the dot.
     - When `exchange.precisionMode` is `TICK_SIZE` then the `currency['precision']` designates the smallest possible float fractions.
-- `limits`. The minimums and maximums for prices, amounts (volumes), costs (where cost = price * amount) and withdrawals.
+- `limits`. The minimums and maximums for amounts (volumes) and withdrawals.
 
 ## Precision And Limits
 
@@ -2800,7 +2827,7 @@ To place an order you will need the following information:
 
 A successful call to a unified method for placing market or limit orders returns the unified [order structure](#order-structure).
 
-Note, that some fields from the order structure returned from `createOrder` may be `undefined / None / null` if the underlying exchange API does not return that information in the response. In general, the user is guaranteed that the `createOrder` method will return a structure that will contain at least the order `id` and the `info`:
+Note, that some fields from the order structure returned from `createOrder` may be `undefined / None / null` if the underlying exchange API does not return that information in the response. In general, the user is guaranteed that the `createOrder` method will return a unified [order structure](#order-structure) that will contain at least the order `id` and the `info` (a raw response from the exchange "as is"):
 
 ```JavaScript
 {
@@ -2808,6 +2835,8 @@ Note, that some fields from the order structure returned from `createOrder` may 
     'info': { ... }, // decoded original JSON response from the exchange as is
 }
 ```
+
+You can use the `id` from the returned unified [order structure](#order-structure) to query the status and the state of the order later.
 
 - **Some exchanges will allow to trade with limit orders only.** See [their docs](#exchanges) for details.
 

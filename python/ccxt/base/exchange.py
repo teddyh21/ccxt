@@ -4,7 +4,7 @@
 
 # -----------------------------------------------------------------------------
 
-__version__ = '1.47.66'
+__version__ = '1.48.25'
 
 # -----------------------------------------------------------------------------
 
@@ -2236,9 +2236,8 @@ class Exchange(object):
         shouldParseFees = parseFee or parseFees
         fees = self.safe_value(order, 'fees', [])
         if parseFilled or parseCost or shouldParseFees:
-            trades = self.safe_value(order, 'trades', [])
-            tradesLength = len(trades)
-            if tradesLength:
+            trades = self.safe_value(order, 'trades')
+            if isinstance(trades, list):
                 if parseFilled:
                     filled = 0
                 if parseCost:
@@ -2327,3 +2326,8 @@ class Exchange(object):
     def safe_number_2(self, dictionary, key1, key2, default=None):
         value = self.safe_string_2(dictionary, key1, key2)
         return self.parse_number(value, default)
+
+    def parse_precision(self, precision):
+        if precision is None:
+            return None
+        return '1e' + Precise.string_neg(precision)
