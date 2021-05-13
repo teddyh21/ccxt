@@ -112,11 +112,21 @@ module.exports = class bithumb extends Exchange {
             'options': {
                 'quoteCurrencies': {
                     'BTC': {
-                        'precision': {
-                            'price': 8,
+                        'limits': {
+                            'cost': {
+                                'min': 0.0002,
+                                'max': 100,
+                            },
                         },
                     },
-                    'KRW': {},
+                    'KRW': {
+                        'limits': {
+                            'cost': {
+                                'min': 500,
+                                'max': 5000000000,
+                            },
+                        },
+                    },
                 },
             },
         });
@@ -172,10 +182,7 @@ module.exports = class bithumb extends Exchange {
                             'min': undefined,
                             'max': undefined,
                         },
-                        'cost': {
-                            'min': 500,
-                            'max': 5000000000,
-                        },
+                        'cost': {}, // set via options
                     },
                     'baseId': undefined,
                     'quoteId': undefined,
@@ -212,7 +219,7 @@ module.exports = class bithumb extends Exchange {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = {
-            'currency': market['base'],
+            'currency': market['base'] + '_' + market['quote'],
         };
         if (limit !== undefined) {
             request['count'] = limit; // default 30, max 30
@@ -896,7 +903,7 @@ module.exports = class bithumb extends Exchange {
             if (status !== undefined) {
                 if (status === '0000') {
                     return; // no error
-                } else if (status === '5600') {
+                } else if (message === '거래 진행중인 내역이 존재하지 않습니다') {
                     // https://github.com/ccxt/ccxt/issues/9017
                     return; // no error
                 }

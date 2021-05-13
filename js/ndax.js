@@ -870,7 +870,11 @@ module.exports = class ndax extends Exchange {
         //         },
         //     ]
         //
-        const result = { 'info': response };
+        const result = {
+            'info': response,
+            'timestamp': undefined,
+            'datetime': undefined,
+        };
         for (let i = 0; i < response.length; i++) {
             const balance = response[i];
             const currencyId = this.safeString (balance, 'ProductId');
@@ -1251,7 +1255,7 @@ module.exports = class ndax extends Exchange {
             request['InstrumentId'] = market['id'];
         }
         if (since !== undefined) {
-            request['StartTimeStamp'] = since;
+            request['StartTimeStamp'] = parseInt (since / 1000);
         }
         if (limit !== undefined) {
             request['Depth'] = limit;
@@ -1455,7 +1459,7 @@ module.exports = class ndax extends Exchange {
             request['InstrumentId'] = market['id'];
         }
         if (since !== undefined) {
-            request['StartTimeStamp'] = since;
+            request['StartTimeStamp'] = parseInt (since / 1000);
         }
         if (limit !== undefined) {
             request['Depth'] = limit;

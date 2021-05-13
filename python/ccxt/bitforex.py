@@ -238,8 +238,10 @@ class bitforex(Exchange):
                 },
             },
             'commonCurrencies': {
+                'ACE': 'ACE Entertainment',
                 'CREDIT': 'TerraCredit',
                 'CTC': 'Culture Ticket Chain',
+                'GOT': 'GoNetwork',
                 'HBC': 'Hybrid Bank Cash',
                 'IQ': 'IQ.Cash',
                 'UOS': 'UOS Network',

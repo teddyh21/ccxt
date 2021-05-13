@@ -110,6 +110,8 @@ class ftx(Exchange):
                         'options/historical_volumes/BTC',
                         'options/open_interest/BTC',
                         'options/historical_open_interest/BTC',
+                        # spot margin
+                        'spot_margin/history',
                     ],
                 },
                 'private': {
@@ -246,6 +248,7 @@ class ftx(Exchange):
                     'Not enough balances': InsufficientFunds,  # {"error":"Not enough balances","success":false}
                     'InvalidPrice': InvalidOrder,  # {"error":"Invalid price","success":false}
                     'Size too small': InvalidOrder,  # {"error":"Size too small","success":false}
+                    'Size too large': InvalidOrder,  # {"error":"Size too large","success":false}
                     'Missing parameter price': InvalidOrder,  # {"error":"Missing parameter price","success":false}
                     'Order not found': OrderNotFound,  # {"error":"Order not found","success":false}
                     'Order already closed': InvalidOrder,  # {"error":"Order already closed","success":false}
@@ -1612,6 +1615,19 @@ class ftx(Exchange):
         #
         # fetchDeposits
         #
+        #     airdrop
+        #
+        #     {
+        #         "id": 9147072,
+        #         "coin": "SRM_LOCKED",
+        #         "size": 3.12,
+        #         "time": "2021-04-27T23:59:03.565983+00:00",
+        #         "notes": "SRM Airdrop for FTT holdings",
+        #         "status": "complete"
+        #     }
+        #
+        #     regular deposits
+        #
         #     {
         #         "coin": "TUSD",
         #         "confirmations": 64,
@@ -1662,7 +1678,7 @@ class ftx(Exchange):
         if address is None:
             # parse address from internal transfer
             notes = self.safe_string(transaction, 'notes')
-            if notes is not None:
+            if (notes is not None) and (notes.find('Transfer to') >= 0):
                 address = notes[12:]
         fee = self.safe_number(transaction, 'fee')
         return {

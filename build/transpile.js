@@ -63,6 +63,7 @@ class Transpiler {
             [ /\.parseDate\s/g, '.parse_date'],
             [ /\.parseLedgerEntry\s/g, '.parse_ledger_entry'],
             [ /\.parseLedger\s/g, '.parse_ledger'],
+            [ /\.parseTickers\s/g, '.parse_tickers'],
             [ /\.parseTicker\s/g, '.parse_ticker'],
             [ /\.parseTimeframe\s/g, '.parse_timeframe'],
             [ /\.parseTradesData\s/g, '.parse_trades_data'],
@@ -358,8 +359,8 @@ class Transpiler {
             [ /this\./g, '$this->' ],
             [ / this;/g, ' $this;' ],
             [ /([^'])this_\./g, '$1$this_->' ],
-            [ /\{\}/g, 'array()' ],
-            [ /\[\]/g, 'array()' ],
+            [ /([^'])\{\}/g, '$1array()' ],
+            [ /([^'])\[\]/g, '$1array()' ],
 
         // add {}-array syntax conversions up to 20 levels deep in the same line
         ]).concat ([ ... Array (20) ].map (x => [ /\{([^\n\}]+)\}/g, 'array($1)' ] )).concat ([
@@ -1080,9 +1081,8 @@ class Transpiler {
                 fs.readdirSync (folder)
                     .filter (file =>
                         !fs.lstatSync (folder + file).isDirectory () &&
-                        file.match (regex) &&
-                        !(file.replace (/\.[a-z]+$/, '') in classes) &&
-                        !file.match (/^Exchange|errors|__init__|\\./))
+                        !(file.replace (pattern, '') in classes) &&
+                        !file.match (/^[A-Z_]/))
                     .map (file => folder + file)
                     .forEach (file => log.red ('Deleting ' + file.yellow) && fs.unlinkSync (file))
             }

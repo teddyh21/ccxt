@@ -234,6 +234,18 @@ class aax extends Exchange {
             'precisionMode' => TICK_SIZE,
             'options' => array(
                 'defaultType' => 'spot', // 'spot', 'future'
+                'types' => array(
+                    'spot' => 'SPTP',
+                    'future' => 'FUTP',
+                    'otc' => 'F2CP',
+                    'saving' => 'VLTP',
+                ),
+                'accounts' => array(
+                    'SPTP' => 'spot',
+                    'FUTP' => 'future',
+                    'F2CP' => 'otc',
+                    'VLTP' => 'saving',
+                ),
             ),
         ));
     }
@@ -735,12 +747,7 @@ class aax extends Exchange {
         $this->load_markets();
         $defaultType = $this->safe_string_2($this->options, 'fetchBalance', 'defaultType', 'spot');
         $type = $this->safe_string($params, 'type', $defaultType);
-        $types = array(
-            'spot' => 'SPTP',
-            'future' => 'FUTP',
-            'otc' => 'F2CP',
-            'saving' => 'VLTP',
-        );
+        $types = $this->safe_value($this->options, 'types', array());
         $purseType = $this->safe_string($types, $type, $type);
         $request = array(
             'purseType' => $purseType,
@@ -769,7 +776,12 @@ class aax extends Exchange {
         //     }
         //
         $data = $this->safe_value($response, 'data');
-        $result = array( 'info' => $response );
+        $timestamp = $this->safe_integer($response, 'ts');
+        $result = array(
+            'info' => $response,
+            'timestamp' => $timestamp,
+            'datetime' => $this->iso8601($timestamp),
+        );
         for ($i = 0; $i < count($data); $i++) {
             $balance = $data[$i];
             $balanceType = $this->safe_string($balance, 'purseType');
@@ -1577,18 +1589,9 @@ class aax extends Exchange {
         if (($filled === 0) && ($remaining === 0)) {
             $remaining = null;
         }
-        $cost = null;
-        $lastTradeTimestamp = null;
-        if ($filled !== null) {
-            if ($price !== null) {
-                $cost = $filled * $price;
-            }
-            if ($filled > 0) {
-                $lastTradeTimestamp = $this->safe_value($order, 'transactTime');
-                if (gettype($lastTradeTimestamp) === 'string') {
-                    $lastTradeTimestamp = $this->parse8601($lastTradeTimestamp);
-                }
-            }
+        $lastTradeTimestamp = $this->safe_value($order, 'transactTime');
+        if (gettype($lastTradeTimestamp) === 'string') {
+            $lastTradeTimestamp = $this->parse8601($lastTradeTimestamp);
         }
         $fee = null;
         $feeCost = $this->safe_number($order, 'commission');
@@ -1606,7 +1609,7 @@ class aax extends Exchange {
                 'cost' => $feeCost,
             );
         }
-        return array(
+        return $this->safe_order(array(
             'id' => $id,
             'info' => $order,
             'clientOrderId' => $clientOrderId,
@@ -1625,10 +1628,10 @@ class aax extends Exchange {
             'amount' => $amount,
             'filled' => $filled,
             'remaining' => $remaining,
-            'cost' => $cost,
+            'cost' => null,
             'trades' => null,
             'fee' => $fee,
-        );
+        ));
     }
 
     public function fetch_my_trades($symbol = null, $since = null, $limit = null, $params = array ()) {

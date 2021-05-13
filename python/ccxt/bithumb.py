@@ -123,11 +123,21 @@ class bithumb(Exchange):
             'options': {
                 'quoteCurrencies': {
                     'BTC': {
-                        'precision': {
-                            'price': 8,
+                        'limits': {
+                            'cost': {
+                                'min': 0.0002,
+                                'max': 100,
+                            },
                         },
                     },
-                    'KRW': {},
+                    'KRW': {
+                        'limits': {
+                            'cost': {
+                                'min': 500,
+                                'max': 5000000000,
+                            },
+                        },
+                    },
                 },
             },
         })
@@ -178,10 +188,7 @@ class bithumb(Exchange):
                             'min': None,
                             'max': None,
                         },
-                        'cost': {
-                            'min': 500,
-                            'max': 5000000000,
-                        },
+                        'cost': {},  # set via options
                     },
                     'baseId': None,
                     'quoteId': None,
@@ -213,7 +220,7 @@ class bithumb(Exchange):
         self.load_markets()
         market = self.market(symbol)
         request = {
-            'currency': market['base'],
+            'currency': market['base'] + '_' + market['quote'],
         }
         if limit is not None:
             request['count'] = limit  # default 30, max 30
@@ -846,7 +853,7 @@ class bithumb(Exchange):
             if status is not None:
                 if status == '0000':
                     return  # no error
-                elif status == '5600':
+                elif message == '거래 진행중인 내역이 존재하지 않습니다':
                     # https://github.com/ccxt/ccxt/issues/9017
                     return  # no error
                 feedback = self.id + ' ' + body

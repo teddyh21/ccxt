@@ -115,11 +115,21 @@ class bithumb extends Exchange {
             'options' => array(
                 'quoteCurrencies' => array(
                     'BTC' => array(
-                        'precision' => array(
-                            'price' => 8,
+                        'limits' => array(
+                            'cost' => array(
+                                'min' => 0.0002,
+                                'max' => 100,
+                            ),
                         ),
                     ),
-                    'KRW' => array(),
+                    'KRW' => array(
+                        'limits' => array(
+                            'cost' => array(
+                                'min' => 500,
+                                'max' => 5000000000,
+                            ),
+                        ),
+                    ),
                 ),
             ),
         ));
@@ -175,10 +185,7 @@ class bithumb extends Exchange {
                             'min' => null,
                             'max' => null,
                         ),
-                        'cost' => array(
-                            'min' => 500,
-                            'max' => 5000000000,
-                        ),
+                        'cost' => array(), // set via options
                     ),
                     'baseId' => null,
                     'quoteId' => null,
@@ -215,7 +222,7 @@ class bithumb extends Exchange {
         yield $this->load_markets();
         $market = $this->market($symbol);
         $request = array(
-            'currency' => $market['base'],
+            'currency' => $market['base'] . '_' . $market['quote'],
         );
         if ($limit !== null) {
             $request['count'] = $limit; // default 30, max 30
@@ -899,7 +906,7 @@ class bithumb extends Exchange {
             if ($status !== null) {
                 if ($status === '0000') {
                     return; // no error
-                } else if ($status === '5600') {
+                } else if ($message === '거래 진행중인 내역이 존재하지 않습니다') {
                     // https://github.com/ccxt/ccxt/issues/9017
                     return; // no error
                 }
