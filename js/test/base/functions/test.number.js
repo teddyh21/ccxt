@@ -297,6 +297,8 @@ const y = '69696900000';
 const z = '0';
 const a = '1e8';
 
+const start = performance.now ()
+
 assert (Precise.stringMul (x, y) === '1393.938');
 assert (Precise.stringMul (y, x) === '1393.938');
 assert (Precise.stringAdd (x, y) === '69696900000.00000002');
@@ -353,3 +355,7 @@ assert (Precise.stringNeg ('0') === '0');
 assert (Precise.stringNeg ('-0') === '0');
 assert (Precise.stringNeg ('-500.1') === '500.1');
 assert (Precise.stringNeg ('213') === '-213');
+
+const end = performance.now ()
+
+console.log (end - start)

@@ -69,6 +69,13 @@ function numberToString (x) { // avoids scientific notation for too large and to
     return s
 }
 
+const format = new Intl.DateTimeFormat ('en-US', { useGrouping: false, maximumFractionDigits: 20 })
+function numberToString2 (x) { // avoids scientific notation for too large and too small numbers
+    return format.format (x)
+}
+
+
+
 //-----------------------------------------------------------------------------
 // expects non-scientific notation
 
@@ -323,6 +330,48 @@ function omitZero (stringNumber) {
     }
     return stringNumber
 }
+
+let floatBuffer = new DataView (new ArrayBuffer (8))
+const leftShifter = 2 ** 32
+const mantissaAdder = BigInt (2 ** 52)
+
+function floatToString (x, decimals = 18) {
+
+    if (typeof x === 'string') return x
+
+    // it is a number
+    floatBuffer.setFloat64 (0, x)
+    const left = floatBuffer.getUint32 (0)
+    const right = floatBuffer.getUint32 (4)
+    //const sign = (left >>> 31) ? '-' : ''
+    const exponent = BigInt (2) ** BigInt (((left & 0x7fffffff) >>> 20) - 1023)
+    const mantissa = BigInt (((left & 0xfffff) * leftShifter) + right) + mantissaAdder
+    const result = exponent * mantissa
+    const integer = result / mantissaAdder
+    let remainder = result % mantissaAdder
+    const decimal = remainder * 10000n / mantissaAdder
+    return integer + '.' + decimal
+}
+const before = performance.now ()
+
+for (let i = 0; i < 10000; i++) {
+    numberToString2 (i*i/3)
+
+}
+const after = performance.now ()
+
+console.log (after - before)
+
+const before2 = performance.now ()
+
+for (let i = 0; i < 10000; i++) {
+    numberToString (i*i/3)
+
+}
+
+const after2 = performance.now ()
+
+console.log (after2 - before2)
 
 /*  ------------------------------------------------------------------------ */
 

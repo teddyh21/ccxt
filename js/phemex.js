@@ -4,7 +4,8 @@
 
 const Exchange = require ('./base/Exchange');
 const { ExchangeError, BadSymbol, AuthenticationError, InsufficientFunds, InvalidOrder, ArgumentsRequired, OrderNotFound, BadRequest, PermissionDenied, AccountSuspended, CancelPending, DDoSProtection, DuplicateOrderId, NotSupported } = require ('./base/errors');
-const { TICK_SIZE, ROUND, DECIMAL_PLACES } = require ('./base/functions/number');
+const { TICK_SIZE, ROUND, TRUNCATE, DECIMAL_PLACES } = require ('./base/functions/number');
+const Precise = require ('./base/Precise');
 
 // ----------------------------------------------------------------------------
 
@@ -386,15 +387,15 @@ module.exports = class phemex extends Exchange {
         const priceScale = this.safeInteger (market, 'priceScale');
         const ratioScale = this.safeInteger (market, 'ratioScale');
         const valueScale = this.safeInteger (market, 'valueScale');
-        const minPriceEp = this.safeNumber (market, 'minPriceEp');
-        const maxPriceEp = this.safeNumber (market, 'maxPriceEp');
-        const makerFeeRateEr = this.safeNumber (market, 'makerFeeRateEr');
-        const takerFeeRateEr = this.safeNumber (market, 'takerFeeRateEr');
+        const minPriceEp = this.safeString (market, 'minPriceEp');
+        const maxPriceEp = this.safeString (market, 'maxPriceEp');
+        const makerFeeRateEr = this.safeString (market, 'makerFeeRateEr');
+        const takerFeeRateEr = this.safeString (market, 'takerFeeRateEr');
         if (makerFeeRateEr !== undefined) {
-            maker = this.fromEn (makerFeeRateEr, ratioScale, 0.00000001);
+            maker = this.parseNumber (this.fromEn (makerFeeRateEr, ratioScale, 0.00000001));
         }
         if (takerFeeRateEr !== undefined) {
-            taker = this.fromEn (takerFeeRateEr, ratioScale, 0.00000001);
+            taker = this.parseNumber (this.fromEn (takerFeeRateEr, ratioScale, 0.00000001));
         }
         const limits = {
             'amount': {
@@ -402,12 +403,12 @@ module.exports = class phemex extends Exchange {
                 'max': undefined,
             },
             'price': {
-                'min': this.fromEn (minPriceEp, priceScale, precision['price']),
-                'max': this.fromEn (maxPriceEp, priceScale, precision['price']),
+                'min': this.parseNumber (this.fromEn (minPriceEp, priceScale, precision['price'])),
+                'max': this.parseNumber (this.fromEn (maxPriceEp, priceScale, precision['price'])),
             },
             'cost': {
                 'min': undefined,
-                'max': this.parseSafeNumber (this.safeString (market, 'maxOrderQty')),
+                'max': this.parseNumber (this.safeString (market, 'maxOrderQty')),
             },
         };
         const status = this.safeString (market, 'status');
@@ -804,7 +805,10 @@ module.exports = class phemex extends Exchange {
     }
 
     toEn (n, scale, precision) {
-        return parseInt (this.decimalToPrecision (n * Math.pow (10, scale), ROUND, precision, DECIMAL_PLACES));
+        const precise = new Precise (n);
+        precise.decimals = n - scale;
+        precise.reduce ();
+        return parseInt (this.decimalToPrecision (precise.toString (), TRUNCATE, precision, DECIMAL_PLACES));
     }
 
     toEv (amount, market = undefined) {
@@ -821,12 +825,21 @@ module.exports = class phemex extends Exchange {
         return this.toEn (price, market['priceScale'], 0);
     }
 
-    fromEn (en, scale, precision, precisionMode = undefined) {
+    fromEn (en, scale, precision, precisionMode) {
         if (en === undefined) {
-            return en;
+            return undefined;
         }
+        const precise = new Precise (en);
+        precise.decimals = precise.decimals + scale;
+        precise.reduce ();
         precisionMode = (precisionMode === undefined) ? this.precisionMode : precisionMode;
-        return parseFloat (this.decimalToPrecision (en * Math.pow (10, -scale), ROUND, precision, precisionMode));
+        let countingMode = undefined;
+        if (precisionMode === TICK_SIZE) {
+            countingMode = ROUND;
+        } else {
+            countingMode = TRUNCATE;
+        }
+        return this.decimalToPrecision (precise.toString (), countingMode, parseFloat (precision), precisionMode);
     }
 
     fromEp (ep, market = undefined) {
@@ -870,16 +883,16 @@ module.exports = class phemex extends Exchange {
         //
         let baseVolume = undefined;
         if ((market !== undefined) && market['spot']) {
-            baseVolume = this.fromEv (this.safeNumber (ohlcv, 7), market);
+            baseVolume = this.parseNumber (this.fromEv (this.safeString (ohlcv, 7), market));
         } else {
-            baseVolume = this.safeInteger (ohlcv, 7);
+            baseVolume = this.safeNumber (ohlcv, 7);
         }
         return [
             this.safeTimestamp (ohlcv, 0),
-            this.fromEp (this.safeNumber (ohlcv, 3), market),
-            this.fromEp (this.safeNumber (ohlcv, 4), market),
-            this.fromEp (this.safeNumber (ohlcv, 5), market),
-            this.fromEp (this.safeNumber (ohlcv, 6), market),
+            this.parseNumber (this.fromEp (this.safeString (ohlcv, 3), market)),
+            this.parseNumber (this.fromEp (this.safeString (ohlcv, 4), market)),
+            this.parseNumber (this.fromEp (this.safeString (ohlcv, 5), market)),
+            this.parseNumber (this.fromEp (this.safeString (ohlcv, 6), market)),
             baseVolume,
         ];
     }
