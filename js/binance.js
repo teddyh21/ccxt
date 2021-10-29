@@ -4298,7 +4298,10 @@ module.exports = class binance extends Exchange {
             markPrice = this.parseNumber (markPriceString);
         }
         const entryPrice = this.safeNumber (position, 'entryPrice');
-        const timestamp = this.safeInteger (position, 'updateTime');
+        let timestamp = this.safeInteger (position, 'updateTime');
+        if (timestamp === 0) {
+            timestamp = undefined;
+        }
         const maintenanceMarginPercentage = this.parseNumber (maintenanceMarginPercentageString);
         const maintenanceMarginString = Precise.stringMul (maintenanceMarginPercentageString, notionalStringAbs);
         const maintenanceMargin = this.parseNumber (maintenanceMarginString);
@@ -4435,7 +4438,12 @@ module.exports = class binance extends Exchange {
             throw NotSupported (this.id + ' fetchIsolatedPositions() supports linear and inverse contracts only');
         }
         const response = await this[method] (this.extend (request, params));
-        return this.parsePositionRisk (this.safeValue (response, 0), market);
+        const result = [];
+        for (let i = 0; i < response.length; i++) {
+            const entry = response[i];
+            result.push (this.parsePositionRisk (entry, market));
+        }
+        return result;
     }
 
     async fetchFundingHistory (symbol = undefined, since = undefined, limit = undefined, params = {}) {
