@@ -4344,6 +4344,7 @@ module.exports = class binance extends Exchange {
             'marginType': marginType,
             'side': side,
             'percentage': percentage,
+            'contractSize': this.parseNumber (market['contractSize']),
         };
     }
 
@@ -4434,18 +4435,7 @@ module.exports = class binance extends Exchange {
             throw NotSupported (this.id + ' fetchIsolatedPositions() supports linear and inverse contracts only');
         }
         const response = await this[method] (this.extend (request, params));
-        if (symbol === undefined) {
-            const result = [];
-            for (let i = 0; i < response.length; i++) {
-                const parsed = this.parsePositionRisk (response[i], market);
-                if (parsed['marginType'] === 'isolated') {
-                    result.push (parsed);
-                }
-            }
-            return result;
-        } else {
-            return this.parsePositionRisk (this.safeValue (response, 0), market);
-        }
+        return this.parsePositionRisk (this.safeValue (response, 0), market);
     }
 
     async fetchFundingHistory (symbol = undefined, since = undefined, limit = undefined, params = {}) {
