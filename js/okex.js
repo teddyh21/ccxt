@@ -746,12 +746,19 @@ module.exports = class okex extends Exchange {
         //     }
         //
         const id = this.safeString (market, 'instId');
-        const type = this.safeStringLower (market, 'instType');
+        const instTypes = {
+            'SPOT': 'spot',
+            'FUTURES': 'future',
+            'SWAP': 'swap',
+            'OPTION': 'option',
+        };
+        const rawType = this.safeString (market, 'instType');
+        const type = this.safeString (instTypes, rawType);
         const spot = (type === 'spot');
-        const futures = (type === 'futures');
+        const future = (type === 'future');
         const swap = (type === 'swap');
         const option = (type === 'option');
-        const contract = swap || futures || option;
+        const contract = swap || future || option;
         let baseId = this.safeString (market, 'baseCcy');
         let quoteId = this.safeString (market, 'quoteCcy');
         const settleCurrency = this.safeString (market, 'settleCcy');
@@ -811,7 +818,7 @@ module.exports = class okex extends Exchange {
             'info': market,
             'type': type,
             'spot': spot,
-            'futures': futures,
+            'future': future,
             'swap': swap,
             'contract': contract,
             'option': option,
@@ -1495,29 +1502,33 @@ module.exports = class okex extends Exchange {
         //         "ts":"1639043138472"
         //     }
         //
+        const maker = Precise.stringNeg (this.safeString (fee, 'maker'));
+        const taker = Precise.stringNeg (this.safeString (fee, 'taker'));
         return {
             'info': fee,
             'symbol': this.safeSymbol (undefined, market),
-            'maker': this.safeNumber (fee, 'maker'),
-            'taker': this.safeNumber (fee, 'taker'),
+            'maker': this.parseNumber (maker),
+            'taker': this.parseNumber (taker),
         };
     }
 
     async fetchTradingFee (symbol, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
+        const info = this.safeValue (market, 'info');
+        const instType = this.safeString (info, 'instType');
         const request = {
-            'instType': market['type'].toUpperCase (), // SPOT, MARGIN, SWAP, FUTURES, OPTION
+            'instType': instType, // SPOT, MARGIN, SWAP, FUTURES, OPTION
             // 'instId': market['id'], // only applicable to SPOT/MARGIN
             // 'uly': market['id'], // only applicable to FUTURES/SWAP/OPTION
             // 'category': '1', // 1 = Class A, 2 = Class B, 3 = Class C, 4 = Class D
         };
         if (market['spot']) {
             request['instId'] = market['id'];
-        } else if (market['swap'] || market['futures'] || market['option']) {
+        } else if (market['swap'] || market['future'] || market['option']) {
             request['uly'] = market['baseId'] + '-' + market['quoteId'];
         } else {
-            throw new NotSupported (this.id + ' fetchTradingFee supports spot, swap, futures or option markets only');
+            throw new NotSupported (this.id + ' fetchTradingFee supports spot, swap, future or option markets only');
         }
         const response = await this.privateGetAccountTradeFee (this.extend (request, params));
         //
@@ -2123,7 +2134,7 @@ module.exports = class okex extends Exchange {
         let market = undefined;
         if (symbol !== undefined) {
             market = this.market (symbol);
-            if (market['futures'] || market['swap']) {
+            if (market['future'] || market['swap']) {
                 type = market['type'];
             }
             request['instId'] = market['id'];
