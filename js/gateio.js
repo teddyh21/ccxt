@@ -1112,6 +1112,8 @@ module.exports = class gateio extends Exchange {
     }
 
     async fetchNetworkDepositAddress (code, params = {}) {
+        // todo: deprecated
+        // it's now called fetchDepositAddressesByNetwork and returns a different structure
         await this.loadMarkets ();
         const currency = this.currency (code);
         const request = {
