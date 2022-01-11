@@ -43,7 +43,7 @@ module.exports = class bitmex extends Exchange {
                 'fetchTicker': true,
                 'fetchTickers': true,
                 'fetchTrades': true,
-                'fetchTransactions': 'emulated',
+                'fetchTransactions': true,
                 'withdraw': true,
             },
             'timeframes': {

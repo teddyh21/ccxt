@@ -33,7 +33,7 @@ module.exports = class therock extends Exchange {
                 'fetchTicker': true,
                 'fetchTickers': true,
                 'fetchTrades': true,
-                'fetchTransactions': 'emulated',
+                'fetchTransactions': true,
                 'fetchWithdrawals': true,
             },
             'urls': {

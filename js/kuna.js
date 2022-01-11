@@ -23,7 +23,7 @@ module.exports = class kuna extends Exchange {
                 'fetchBalance': true,
                 'fetchMarkets': true,
                 'fetchMyTrades': true,
-                'fetchOHLCV': 'emulated',
+                'fetchOHLCV': true,
                 'fetchOpenOrders': true,
                 'fetchOrder': true,
                 'fetchOrderBook': true,

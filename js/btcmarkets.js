@@ -21,7 +21,7 @@ module.exports = class btcmarkets extends Exchange {
                 'CORS': undefined,
                 'createOrder': true,
                 'fetchBalance': true,
-                'fetchClosedOrders': 'emulated',
+                'fetchClosedOrders': true,
                 'fetchDeposits': true,
                 'fetchMarkets': true,
                 'fetchMyTrades': true,

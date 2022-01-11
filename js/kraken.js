@@ -42,7 +42,7 @@ module.exports = class kraken extends Exchange {
                 'fetchOpenOrders': true,
                 'fetchOrder': true,
                 'fetchOrderBook': true,
-                'fetchOrderTrades': 'emulated',
+                'fetchOrderTrades': true,
                 'fetchPositions': true,
                 'fetchPremiumIndexOHLCV': false,
                 'fetchTicker': true,

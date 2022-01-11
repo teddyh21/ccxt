@@ -26,7 +26,7 @@ module.exports = class poloniex extends Exchange {
                 'createOrder': true,
                 'editOrder': true,
                 'fetchBalance': true,
-                'fetchClosedOrder': 'emulated',
+                'fetchClosedOrder': true,
                 'fetchCurrencies': true,
                 'fetchDepositAddress': true,
                 'fetchDeposits': true,
