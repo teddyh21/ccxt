@@ -82,6 +82,6 @@
     "no-underscore-dangle": "off",
     "consistent-return": "off",
     "no-await-in-loop": "off",
-    "prefer-exponentiation-operator": "off",
+    "prefer-exponentiation-operator": "off"
   }
 }
