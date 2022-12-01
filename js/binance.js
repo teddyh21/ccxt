@@ -1674,10 +1674,9 @@ module.exports = class binance extends Exchange {
             const contractType = this.safeString (market, 'contractType');
             const idSymbol = contract && (contractType !== 'PERPETUAL');
             let symbol = undefined;
-            let expiry = undefined;
+            let expiry = this.safeInteger (market, 'deliveryDate');
             if (idSymbol) {
                 symbol = id;
-                expiry = this.safeInteger (market, 'deliveryDate');
             } else {
                 symbol = base + '/' + quote;
             }
@@ -1688,7 +1687,19 @@ module.exports = class binance extends Exchange {
             let fees = this.fees;
             let linear = undefined;
             let inverse = undefined;
+            let unifiedType = type;
+            let unifiedSwap = false;
+            let unifiedFuture = false;
             if (contract) {
+                // magic number for 2100
+                if (expiry === 4133404800000) {
+                    expiry = undefined;
+                    unifiedSwap = true;
+                    unifiedType = 'swap';
+                } else {
+                    unifiedFuture = true;
+                    unifiedType = 'future';
+                }
                 contractSize = this.safeNumber (market, 'contractSize', this.parseNumber ('1'));
                 fees = this.fees[type];
                 linear = settle === quote;
@@ -1715,12 +1726,11 @@ module.exports = class binance extends Exchange {
                 'baseId': baseId,
                 'quoteId': quoteId,
                 'settleId': settleId,
-                'type': type,
+                'type': unifiedType,
                 'spot': spot,
                 'margin': spot && isMarginTradingAllowed,
-                'swap': future,
-                'future': future,
-                'delivery': delivery,
+                'swap': unifiedSwap,
+                'future': unifiedFuture,
                 'option': false,
                 'active': active,
                 'contract': contract,
