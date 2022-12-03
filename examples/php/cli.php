@@ -12,6 +12,26 @@ use React\Async;
 
 date_default_timezone_set('UTC');
 
+function shutdown_find_exit()
+{
+    $stack = $GLOBALS['dbg_stack'];
+    for ($i = 0; $i < count($stack); $i++) {
+        $item = $stack[$i];
+        if (array_key_exists('file', $item)) {
+            echo $item['file'] . ':' . $item['line'] . PHP_EOL;
+        }
+    }
+    // var_dump($stack);
+}
+register_shutdown_function('shutdown_find_exit');
+function write_dbg_stack()
+{
+    $GLOBALS['dbg_stack'] = debug_backtrace();
+}
+register_tick_function('write_dbg_stack');
+declare(ticks=1);
+
+
 echo 'PHP v' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '.' . PHP_RELEASE_VERSION . "\n";
 echo 'CCXT version :' . \ccxt\async\Exchange::VERSION . "\n";
 
@@ -30,10 +50,10 @@ $main = function() use ($argv) {
 
         $spot = count(array_filter($args, function ($option) { return strstr($option, '--spot') !== false; })) > 0;
         $args = array_values(array_filter($args, function ($option) { return strstr($option, '--spot') === false; }));
-    
+
         $swap = count(array_filter($args, function ($option) { return strstr($option, '--swap') !== false; })) > 0;
         $args = array_values(array_filter($args, function ($option) { return strstr($option, '--swap') === false; }));
-    
+
         $future = count(array_filter($args, function ($option) { return strstr($option, '--future') !== false; })) > 0;
         $args = array_values(array_filter($args, function ($option) { return strstr($option, '--future') === false; }));
 
@@ -63,7 +83,7 @@ $main = function() use ($argv) {
                 $exchange = '\\ccxt\\pro\\' . $id;
             } else {
                 $exchange = '\\ccxt\\async\\' . $id;
-            }        
+            }
             $exchange = new $exchange($config);
 
             if ($spot) {
@@ -118,7 +138,7 @@ $main = function() use ($argv) {
             }
 
             $exchange->verbose = $verbose;
-            
+
             echo $exchange->id . '->' . $member . '(' . @implode(', ', $args) . ")\n";
 
             $is_ws_method = false;
@@ -136,7 +156,8 @@ $main = function() use ($argv) {
                     echo print_r($result, true) . "\n";
 
                     if (!$is_ws_method) {
-                        exit(1);
+                        # make sure to exit with zero exit code here
+                        exit(0);
                     }
 
                 } catch (\ccxt\NetworkError $e) {
